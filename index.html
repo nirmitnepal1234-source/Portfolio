@@ -111,9 +111,25 @@ body:not(.admin) .rsec.empty{display:none}
 .ph{color:var(--muted);opacity:.7}
 .note{color:var(--muted);font-size:.88rem;margin:16px 0 0}
 .ritem{position:relative}
-body.admin .ritem:not(.lang){padding-right:78px}
-.rctl{position:absolute;top:0;right:0;display:inline-flex;gap:4px}
-.lang .rctl{position:static;margin-left:6px}
+.hrow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.hrow>:first-child{flex:1;min-width:0}
+.lang .icon-btn.sm{width:26px;height:26px;font-size:.75rem}
+.rsec-title{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.eye{border:1px solid var(--line);background:var(--card);border-radius:50%;width:34px;height:34px;display:grid;place-items:center;font-size:1rem;line-height:1;transition:transform .2s,background .2s,border-color .2s}
+.eye:hover{background:var(--soft);border-color:var(--g2);transform:scale(1.08)}
+.hbadge{background:var(--soft);border:1px dashed var(--g2);color:var(--muted);border-radius:999px;padding:2px 12px;font:600 .78rem var(--font)}
+.rsec.is-hidden .rsec-head h3{opacity:.5}
+.rsec.is-hidden .rsec-body{opacity:.6}
+body.admin .redit{outline:2px dashed color-mix(in srgb,var(--g2) 55%,transparent);outline-offset:3px;border-radius:6px;cursor:text;display:block;width:fit-content;min-width:3ch;max-width:100%}
+body.admin .lang .redit,body.admin .redit.inl{display:inline-block}
+body.admin .redit:focus{outline:2px solid var(--g2);background:var(--glow)}
+.redit:empty::before{content:attr(data-ph);color:var(--muted);opacity:.55;font-weight:400}
+.tline{display:flex;gap:12px;align-items:baseline;margin-bottom:10px}
+.tline small{color:var(--muted);min-width:56px;flex:none}
+.tline .redit{flex:1;width:auto}
+.meta{display:flex;flex-wrap:wrap;gap:4px 14px}
+.meta small{color:var(--muted);font-size:.9rem}
+.abnote{font-size:.85rem;opacity:.85}
 .r-edu{list-style:none;margin:0;padding:0 0 0 26px;position:relative;display:grid;gap:26px}
 .r-edu::before{content:"";position:absolute;left:5px;top:8px;bottom:8px;width:2px;background:linear-gradient(var(--g2),var(--line))}
 .r-edu li{display:grid;grid-template-columns:140px 1fr;gap:4px 24px}
@@ -224,15 +240,48 @@ input[type=range]{accent-color:var(--g2)}
 .actions{display:flex;justify-content:flex-end;gap:10px;margin-top:6px}
 .err{color:#c0392b;font-size:.9rem;min-height:1.3em;margin:0 0 6px}
  
-.adminbar{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:25;display:flex;align-items:center;gap:12px;background:var(--g1);color:var(--bg);padding:8px 8px 8px 18px;border-radius:999px;box-shadow:0 14px 40px -12px rgba(0,0,0,.5);font-size:.92rem;font-weight:500;max-width:94vw}
+.adminbar{position:static;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px;background:var(--g1);color:var(--bg);padding:8px 16px;font-size:.92rem;font-weight:500;pointer-events:auto}
+.adminbar.bottom{padding:12px 16px}
 .adminbar .pill{background:var(--bg);color:var(--ink);border:0;padding:8px 16px}
+.adminbar .pill:disabled{opacity:.6;cursor:wait}
 .toast{position:fixed;top:84px;left:50%;transform:translate(-50%,-20px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:500;opacity:0;pointer-events:none;transition:.3s;z-index:40}
 .toast.show{opacity:1;transform:translate(-50%,0)}
  
-.contact{text-align:center;padding-bottom:120px}
+.contact{text-align:center;padding-bottom:60px}
 .contact .lead{margin-inline:auto}
 footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;border-top:1px solid var(--line)}
  
+/* section visibility + clickability */
+.vhide{display:none!important}
+body.vis-pending [data-vkey]{visibility:hidden}
+.h2row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 10px}
+.h2row h2{margin:0}
+section.is-hidden .h2row h2{opacity:.5}
+button,a,.eye,.pill,.icon-btn,[data-edit],.redit,.adminbar{pointer-events:auto}
+body.admin .eye{display:grid}
+
+/* print-ready resume */
+@media print{
+  @page{margin:14mm}
+  html,html[data-theme=dark]{--bg:#fff;--card:#fff;--ink:#000;--muted:#333;--line:#bbb;--soft:#fff;--g1:#000;--g2:#14452f;--g3:#14452f;--glow:transparent;--shadow:none;--on-accent:#000}
+  body{background:#fff!important;color:#000;font-size:11pt;line-height:1.45;overflow:visible}
+  #progress,.blobs,.nav,.toast,.marquee,.hero,#about,#skills,#contact,footer,.adminbar,.ractions,.admin-only,.eye,.hbadge,.pill,.icon-btn,.login,dialog,.rsec.is-hidden,#resume>.wrap>h2,#resume>.wrap>.lead{display:none!important}
+  body.admin [data-edit],body.admin .redit{outline:none!important;background:none!important}
+  section{padding:0!important}
+  .wrap{width:100%}
+  .rhead{padding:0 0 12px}
+  .rsec{padding:14px 0;break-inside:avoid;border-bottom:1px solid #bbb}
+  .rsec-head{margin-bottom:10px}
+  .rsec-head h3{font-size:13pt;text-transform:uppercase;letter-spacing:.04em}
+  .rlinks .chip{border:0;padding:0;min-height:0;box-shadow:none;background:none;font-size:10pt}
+  .rlinks .chip .ico{display:none}
+  .proj,.ritem,.skl,.lang{break-inside:avoid;box-shadow:none}
+  .proj{border:1px solid #bbb}
+  .tag{background:none;border:1px solid #999}
+  .r-edu li::before{background:#fff!important;box-shadow:none!important}
+  *{animation:none!important;transition:none!important}
+  a{color:#000;text-decoration:none}
+}
 @media (max-width:900px){.tiers{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:720px){
   .r-edu li{grid-template-columns:1fr}
@@ -245,7 +294,7 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
   .sub{font-size:1.05rem}
   .bar-row{flex-direction:column;align-items:stretch;gap:10px}
   .tools{width:100%}.tools select{flex:1;min-width:0}
-  .adminbar{left:12px;right:12px;transform:none;border-radius:22px;flex-wrap:wrap;justify-content:space-between;padding:10px 10px 10px 16px;font-size:.85rem}
+  .adminbar{font-size:.85rem;padding:10px 12px}
   .toast{max-width:90vw;text-align:center;border-radius:18px}
 }
 @media (max-width:520px){
@@ -268,7 +317,8 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition-duration:.01ms!important}h1 .ch{transform:none;opacity:1}}
 </style>
 </head>
-<body>
+<body class="vis-pending">
+<div class="adminbar admin-only" role="toolbar" aria-label="Admin toolbar"><span>Admin mode · click any dashed text to edit, then Save · 👁️ / 🙈 shows or hides a section for the public</span><span class="abnote" id="abnote" hidden>Resume is showing default data. Import it to enable editing.</span><button class="pill" id="importresume" hidden>Import default resume data</button><button class="pill savetext">Save changes</button></div>
 <div id="progress"></div>
 <div class="blobs" aria-hidden="true"><i></i><i></i></div>
 <div class="toast" id="toast" role="status"></div>
@@ -277,8 +327,8 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
   <div class="nav-in">
     <a class="logo" href="#top">Nirmit Nepal</a>
     <nav aria-label="Main"><ul>
-      <li><a class="l" href="#about">About</a></li>
-      <li><a class="l" href="#skills">Skills</a></li>
+      <li data-vkey="about"><a class="l" href="#about">About</a></li>
+      <li data-vkey="skills_section"><a class="l" href="#skills">Skills</a></li>
       <li><a class="l" href="#resume">Resume</a></li>
       <li><a class="l" href="#contact">Contact</a></li>
       <li><button class="login" id="login">Admin login</button></li>
@@ -294,7 +344,7 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
     <p class="sub" data-edit="hero_sub">I’m a student developer who likes turning ideas into clean, working software, and I keep honest scores on how far I’ve come.</p>
     <div class="cta"><a class="btn" href="#skills">See my skills</a><a class="btn ghost" href="#contact">Get in touch</a></div>
   </div>
-  <div class="marquee" aria-hidden="true"><div class="track" id="track"></div></div>
+  <div class="marquee" data-vkey="skills_section" aria-hidden="true"><div class="track" id="track"></div></div>
  
   <section id="about" class="about"><div class="wrap">
     <h2>About me</h2>
@@ -324,7 +374,7 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
   <section id="resume"><div class="wrap">
     <h2>Resume &amp; background</h2>
     <p class="lead">Where I study, what I build with and what I’m still learning.</p>
- 
+
     <header class="rhead">
       <div class="rtop">
         <div>
@@ -332,8 +382,9 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
           <p class="rrole" data-edit="resume_role">CSE Student | Aspiring Software Developer</p>
         </div>
         <div class="ractions">
-          <a class="btn" href="resume.pdf" download="Nirmit-Nepal-Resume.pdf"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download Resume</a>
+          <a class="btn" href="resume.pdf" download="Nirmit_Nepal_Resume.pdf"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download Resume</a>
           <a class="btn ghost" href="resume.pdf" target="_blank" rel="noopener noreferrer">View</a>
+          <button class="btn ghost" type="button" id="printresume">Print</button>
         </div>
       </div>
       <ul class="rcontact">
@@ -343,11 +394,10 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
       </ul>
       <div class="rlinks" id="rlinks"></div>
     </header>
- 
+
     <div id="rbody"></div>
-    <div class="link-tools"><button class="pill admin-only" id="importresume" hidden>Import default resume data</button></div>
   </div></section>
- 
+
   <section id="contact" class="contact"><div class="wrap">
     <h2>Let’s build something</h2>
     <p class="lead" data-edit="contact_lead">Questions, ideas or opportunities are all welcome.</p>
@@ -359,9 +409,9 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
   </div></section>
 </main>
 <footer>© <span id="year"></span> Nirmit Nepal</footer>
+<div class="adminbar bottom admin-only" role="toolbar" aria-label="Admin save bar"><span>Done editing?</span><button class="pill savetext">Save changes</button></div>
  
-<div class="adminbar admin-only"><span>Admin mode · click any dashed text to edit</span><button class="pill" id="savetext">Save text</button></div>
- 
+
 <dialog id="dlg">
   <form id="form">
     <h3 id="dlg-title">Add a skill</h3>
@@ -379,21 +429,6 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
     <label>URL<input type="text" name="url" required maxlength="300" placeholder="https://github.com/your-name"></label>
     <label>Icon<select name="icon" id="cicon"></select></label>
     <div class="actions"><button type="button" class="pill" data-close>Cancel</button><button class="btn" id="save-link">Save link</button></div>
-  </form>
-</dialog>
- 
-<dialog id="rdlg">
-  <form id="rform">
-    <h3 id="rdlg-title">Add resume item</h3>
-    <label>Section<select name="category" id="rcat"></select></label>
-    <label data-f="title"><span>Title</span><input type="text" name="title" maxlength="120"></label>
-    <label data-f="subtitle"><span>Subtitle</span><input type="text" name="subtitle" maxlength="160"></label>
-    <label data-f="period"><span>Period</span><input type="text" name="period" maxlength="60"></label>
-    <label data-f="location"><span>Location</span><input type="text" name="location" maxlength="120"></label>
-    <label data-f="tags"><span>Tags</span><input type="text" name="tags" maxlength="300"></label>
-    <label data-f="learning"><span>Learning</span><input type="text" name="learning" maxlength="300"></label>
-    <label data-f="details"><span>Details</span><textarea name="details" maxlength="800"></textarea></label>
-    <div class="actions"><button type="button" class="pill" data-close>Cancel</button><button class="btn" id="save-ritem">Save</button></div>
   </form>
 </dialog>
  
@@ -532,11 +567,24 @@ document.querySelectorAll("[data-edit]").forEach(el=>el.addEventListener("paste"
   if(!isAdmin) return; e.preventDefault();
   document.execCommand("insertText",false,e.clipboardData.getData("text/plain"));
 }));
-$("savetext").onclick=async()=>{
+async function saveAll(){
+  if(!sb||!isAdmin) return;
+  const btns=document.querySelectorAll(".savetext"); btns.forEach(b=>b.disabled=true);
   const rows=[...document.querySelectorAll("[data-edit]")].map(el=>({key:el.dataset.edit,value:el.textContent.trim()}));
-  const {error}=await sb.from("site_content").upsert(rows);
-  toast(error?"Couldn’t save: "+error.message:"Text saved");
-};
+  const t=await sb.from("site_content").upsert(rows);
+  let failed=t.error?t.error.message:"";
+  for(const id of Object.keys(dirty)){
+    const patch=dirty[id];
+    const r=await sb.from("resume_data").update(patch).eq("id",isNaN(+id)?id:+id);
+    if(r.error){failed=r.error.message;continue}
+    const row=rrows.find(x=>String(x.id)===id); if(row) Object.assign(row,patch);
+    delete dirty[id];
+  }
+  btns.forEach(b=>b.disabled=false);
+  toast(failed?"Couldn’t save: "+failed:"Changes saved");
+}
+document.querySelectorAll(".savetext").forEach(b=>b.onclick=saveAll);
+$("printresume").onclick=()=>window.print();
  
 /* ====== Auth ====== */
 function setAdmin(on){
@@ -544,6 +592,8 @@ function setAdmin(on){
   $("login").textContent=on?"Log out":"Admin login";
   document.querySelectorAll("[data-edit]").forEach(el=>el.contentEditable=on?"true":"false");
   if(skills.length) view();
+  try{ if(rrows.length) renderResume(); }catch(e){}
+  try{ applyTopVis(); }catch(e){}
 }
 const ldlg=$("ldlg"), lform=$("lform");
 $("login").onclick=async()=>{
@@ -712,81 +762,159 @@ const DEFAULT_RESUME=[
   {category:"extracurricular",title:"Clubs & Societies",details:"--"},
   {category:"extracurricular",title:"Competitions & Events",details:"--"}
 ];
-let rrows=[], rFallback=false;
+let rrows=[], rFallback=false, vis={}, dirty={};
 function setTxt(e,t){e.textContent=t; if((t||"").trim()==="--") e.classList.add("ph")}
 function mk(tag,cls,txt){const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) setTxt(e,txt); return e}
+const put=(p,...c)=>{c.forEach(x=>{if(x) p.append(x)});return p};
 const csv=v=>(v||"").split(",").map(x=>x.trim()).filter(Boolean);
-function addCtl(el,row,cat){
-  if(rFallback) return;
-  const c=mk("span","rctl admin-only");
-  c.innerHTML='<button type="button" class="icon-btn sm" data-a="edit" aria-label="Edit item">✎</button><button type="button" class="icon-btn sm" data-a="del" aria-label="Delete item">✕</button>';
-  c.querySelector('[data-a=edit]').onclick=()=>openRow(cat,row);
-  c.querySelector('[data-a=del]').onclick=()=>removeRow(row);
-  el.append(c);
+const canEdit=()=>!!(isAdmin&&!rFallback&&sb);
+const val=(row,f)=>dirty[row.id]&&f in dirty[row.id]?dirty[row.id][f]:(row[f]||"");
+
+/* an editable text element: dashed + contenteditable for the admin, plain text (or nothing if empty) for visitors */
+function ed(tag,cls,row,f,ph){
+  const v=val(row,f);
+  if(!canEdit()){ if(!v) return null; return mk(tag,cls,v) }
+  const e=mk(tag,cls,v); e.classList.add("redit"); e.contentEditable="true"; e.spellcheck=false; e.dataset.ph=ph;
+  e.addEventListener("input",()=>{
+    const t=e.textContent.trim();
+    (dirty[row.id]=dirty[row.id]||{})[f]=t; e.classList.toggle("ph",t==="--");
+  });
+  e.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();e.blur()}});
+  e.addEventListener("paste",ev=>{ev.preventDefault();document.execCommand("insertText",false,(ev.clipboardData.getData("text/plain")||"").replace(/\s*\n\s*/g," "))});
+  return e;
 }
+function delBtn(row){
+  if(!canEdit()) return null;
+  const b=mk("button","icon-btn sm admin-only","✕"); b.type="button"; b.setAttribute("aria-label","Delete item");
+  b.onclick=()=>removeRow(row); return b;
+}
+const chips=(csvStr,cls)=>csv(csvStr).map(x=>mk("span",cls||"tag",x));
+
 const BUILD={
-  education:(rows,cat)=>{const ol=mk("ol","r-edu");rows.forEach(r=>{const li=mk("li","ritem");li.append(mk("div","when",r.period||""));const d=mk("div");d.append(mk("h4",null,r.title));if(r.subtitle)d.append(mk("p","deg",r.subtitle));if(r.location)d.append(mk("p","loc",r.location));li.append(d);addCtl(li,r,cat);ol.append(li)});return ol},
-  skill:(rows,cat)=>{const w=mk("div","r-skills");let any=false;rows.forEach(r=>{const row=mk("div","skl ritem");row.append(mk("div","skl-name",r.title));const t=mk("div","tags");csv(r.tags).forEach(x=>t.append(mk("span","tag",x)));csv(r.learning).forEach(x=>{const e=mk("span","tag learn",x);e.title="Currently learning";t.append(e);any=true});row.append(t);addCtl(row,r,cat);w.append(row)});if(any)w.append(mk("p","note","Dashed tags are things I’m still learning."));return w},
-  project:(rows,cat)=>{const g=mk("div","r-proj");rows.forEach(r=>{const c=mk("article","proj ritem");c.append(mk("h4",null,r.title));const tg=csv(r.tags);if(tg.length){const t=mk("div","tags sm");tg.forEach(x=>t.append(mk("span","tag",x)));c.append(t)}c.append(mk("p","det",r.details||"--"));addCtl(c,r,cat);g.append(c)});return g},
-  language:(rows,cat)=>{const g=mk("div","r-lang");rows.forEach(r=>{const l=mk("div","lang ritem");l.append(mk("b",null,r.title));if(r.subtitle)l.append(mk("span",null,r.subtitle));addCtl(l,r,cat);g.append(l)});return g},
-  certification:(rows,cat)=>{const ul=mk("ul","r-cert");rows.forEach(r=>{const li=mk("li","ritem");li.append(mk("b",null,r.title));const m=[r.subtitle,r.period].filter(Boolean).join(" · ");if(m)li.append(mk("small",null,m));if(r.details)li.append(mk("p",null,r.details));addCtl(li,r,cat);ul.append(li)});return ul},
-  extracurricular:(rows,cat)=>{const g=mk("div","r-xc");rows.forEach(r=>{const x=mk("div","xc ritem");x.append(mk("h4",null,r.title));x.append(mk("p",null,r.details||"--"));addCtl(x,r,cat);g.append(x)});return g}
+  education:rows=>{const ol=mk("ol","r-edu");rows.forEach(r=>{
+    const li=mk("li","ritem");
+    li.append(ed("div","when",r,"period","Years / grades")||mk("div","when",""));
+    const d=mk("div"); d.append(put(mk("div","hrow"),ed("h4",null,r,"title","Institution"),delBtn(r)));
+    put(d,ed("p","deg",r,"subtitle","Degree / programme"),ed("p","loc",r,"location","Location"));
+    li.append(d); ol.append(li)});return ol},
+  skill:rows=>{const w=mk("div","r-skills");let any=false;rows.forEach(r=>{
+    const row=mk("div","skl ritem");
+    row.append(put(mk("div","skl-name hrow"),ed("span",null,r,"title","Group name"),delBtn(r)));
+    const box=mk("div");
+    if(canEdit()){
+      [["Skills","tags","comma-separated skills"],["Learning","learning","still learning (shown dashed)"]].forEach(([lab,f,ph])=>{
+        const l=mk("div","tline"); l.append(mk("small",null,lab)); l.append(ed("div",null,r,f,ph)); box.append(l)});
+    }else{
+      const t=mk("div","tags"); chips(val(r,"tags")).forEach(c=>t.append(c));
+      chips(val(r,"learning"),"tag learn").forEach(c=>{c.title="Currently learning";t.append(c);any=true}); box.append(t);
+    }
+    row.append(box); w.append(row)});
+    if(any) w.append(mk("p","note","Dashed tags are things I’m still learning.")); return w},
+  project:rows=>{const g=mk("div","r-proj");rows.forEach(r=>{
+    const c=mk("article","proj ritem");
+    c.append(put(mk("div","hrow"),ed("h4",null,r,"title","Project name"),delBtn(r)));
+    if(canEdit()) c.append(ed("div","tl",r,"tags","tech stack, comma-separated"));
+    else{const tg=chips(val(r,"tags"));if(tg.length) c.append(put(mk("div","tags sm"),...tg))}
+    put(c,ed("p","det",r,"details","Details"));
+    g.append(c)});return g},
+  language:rows=>{const g=mk("div","r-lang");rows.forEach(r=>{
+    g.append(put(mk("div","lang ritem"),ed("b",null,r,"title","Language"),ed("span",null,r,"subtitle","Level"),delBtn(r)))});return g},
+  certification:rows=>{const ul=mk("ul","r-cert");rows.forEach(r=>{
+    const li=mk("li","ritem");
+    li.append(put(mk("div","hrow"),ed("b",null,r,"title","Certification / course"),delBtn(r)));
+    const m=put(mk("div","meta"),ed("small",null,r,"subtitle","Issuer / platform"),ed("small",null,r,"period","Date"));
+    if(m.children.length) li.append(m);
+    put(li,ed("p",null,r,"details","Notes")); ul.append(li)});return ul},
+  extracurricular:rows=>{const g=mk("div","r-xc");rows.forEach(r=>{
+    const x=mk("div","xc ritem");
+    x.append(put(mk("div","hrow"),ed("h4",null,r,"title","Group (e.g. Clubs & Societies)"),delBtn(r)));
+    put(x,ed("p",null,r,"details","Details")); g.append(x)});return g}
 };
+
 function renderResume(){
   const box=$("rbody"); box.innerHTML="";
   RCATS.forEach(cat=>{
+    const hidden=!!(vis[cat.key]&&vis[cat.key].hidden);
+    if(hidden&&!isAdmin) return;                      // public visitors never see hidden sections
     const rows=rrows.filter(r=>r.category===cat.key);
-    const sec=mk("div","rsec"+(rows.length?"":" empty")); if(cat.key==="education") sec.id="education-list";
-    const head=mk("div","rsec-head"); head.append(mk("h3",null,cat.title));
-    const add=mk("button","pill admin-only","+ Add"); add.type="button"; add.onclick=()=>openRow(cat.key); head.append(add);
+    const sec=mk("div","rsec"+(rows.length?"":" empty")+(hidden?" is-hidden":""));
+    if(cat.key==="education") sec.id="education-list";
+    const head=mk("div","rsec-head"), left=mk("div","rsec-title");
+    left.append(mk("h3",null,cat.title));
+    const eye=mk("button","eye admin-only",hidden?"🙈":"👁️"); eye.type="button";
+    eye.title=hidden?"Hidden from public. Click to show":"Visible to everyone. Click to hide";
+    eye.setAttribute("aria-label",eye.title); eye.onclick=()=>toggleSection(cat.key);
+    left.append(eye);
+    if(hidden) left.append(mk("span","hbadge admin-only","Hidden from public"));
+    head.append(left);
+    if(canEdit()){const add=mk("button","pill admin-only","+ Add");add.type="button";add.onclick=()=>addItem(cat.key);head.append(add)}
     sec.append(head);
-    sec.append(rows.length?BUILD[cat.key](rows,cat.key):mk("p","note","Nothing here yet. Use + Add to create the first entry."));
-    box.append(sec);
+    const body=mk("div","rsec-body");
+    body.append(rows.length?BUILD[cat.key](rows):mk("p","note","Nothing here yet."+(canEdit()?" Use + Add to create the first entry.":"")));
+    sec.append(body); box.append(sec);
   });
-  $("importresume").hidden=!(rFallback&&sb);
+  const imp=!!(rFallback&&sb);
+  $("importresume").hidden=!imp; $("abnote").hidden=!imp;
+  applyTopVis(); document.body.classList.remove("vis-pending");
 }
 async function loadResume(){
+  vis={};
   if(!sb){rrows=DEFAULT_RESUME;rFallback=true;renderResume();return}
   const {data,error}=await sb.from("resume_data").select("*").order("sort_order").order("created_at");
   if(error) console.error(error);
-  if(error||!data||!data.length){rrows=DEFAULT_RESUME;rFallback=true}
-  else{rrows=data;rFallback=false}
+  const all=data||[];
+  all.filter(r=>r.category==="section_visibility").forEach(r=>{vis[r.title]={id:r.id,hidden:r.subtitle==="hidden"}});
+  const content=all.filter(r=>r.category!=="section_visibility");
+  if(error||!content.length){rrows=DEFAULT_RESUME;rFallback=true}
+  else{rrows=content;rFallback=false}
   renderResume();
 }
-/* admin: add / edit / delete resume items */
-const rdlg=$("rdlg"), rform=$("rform"), RF=["title","subtitle","period","location","tags","learning","details"]; let editingRow=null;
-const rel=n=>rform.elements[n];
-$("rcat").innerHTML=RCATS.map(c=>`<option value="${c.key}">${c.title}</option>`).join("");
-function syncRFields(){
-  const cat=RCATS.find(c=>c.key===rel("category").value);
-  RF.forEach(f=>{const lab=rform.querySelector(`[data-f="${f}"]`),t=cat.f[f];lab.hidden=!t;if(t)lab.querySelector("span").textContent=t;rel(f).required=(f==="title")});
-}
-rel("category").onchange=syncRFields;
-function openRow(catKey,row){
-  if(rFallback&&sb){toast("Click “Import default resume data” first, then edit the items");return}
-  editingRow=row||null;
-  $("rdlg-title").textContent=row?"Edit item":"Add resume item";
-  rel("category").value=catKey; rel("category").disabled=!!row; syncRFields();
-  RF.forEach(f=>{rel(f).value=row?(row[f]||""):""});
-  rdlg.showModal();
-}
-rform.addEventListener("submit",async e=>{
-  e.preventDefault(); if(!sb||!isAdmin) return;
-  const row={category:rel("category").value};
-  RF.forEach(f=>{row[f]=rform.querySelector(`[data-f="${f}"]`).hidden?"":rel(f).value.trim()});
-  const btn=$("save-ritem"); btn.disabled=true;
-  const res=editingRow
-    ? await sb.from("resume_data").update(row).eq("id",editingRow.id)
-    : await sb.from("resume_data").insert({...row,sort_order:rrows.reduce((m,x)=>Math.max(m,x.sort_order||0),0)+1});
-  btn.disabled=false;
-  if(res.error){toast("Couldn’t save: "+res.error.message);return}
-  rdlg.close(); toast(editingRow?"Item updated":"Item added"); loadResume();
+
+/* eye toggles for About + Skills (same section_visibility rows as resume sections) */
+const TOPSEC=[{key:"about",id:"about"},{key:"skills_section",id:"skills"}];
+TOPSEC.forEach(t=>{
+  const sec=$(t.id), h2=sec.querySelector("h2"), row=document.createElement("div");
+  row.className="h2row"; h2.replaceWith(row); row.append(h2);
+  t.eye=mk("button","eye admin-only"); t.eye.type="button"; t.eye.onclick=()=>toggleSection(t.key);
+  t.badge=mk("span","hbadge admin-only","Hidden from public"); t.badge.hidden=true;
+  row.append(t.eye,t.badge); t.sec=sec;
 });
+function applyTopVis(){
+  TOPSEC.forEach(t=>{
+    const hidden=!!(vis[t.key]&&vis[t.key].hidden), gone=hidden&&!isAdmin;
+    t.sec.classList.toggle("is-hidden",hidden); t.sec.classList.toggle("vhide",gone);
+    t.eye.textContent=hidden?"🙈":"👁️";
+    t.eye.title=hidden?"Hidden from public. Click to show":"Visible to everyone. Click to hide";
+    t.eye.setAttribute("aria-label",t.eye.title); t.badge.hidden=!hidden;
+    document.querySelectorAll(`[data-vkey="${t.key}"]`).forEach(el=>el.classList.toggle("vhide",gone));
+  });
+}
+setTimeout(()=>document.body.classList.remove("vis-pending"),4000); // safety net
+
+/* admin: show / hide a whole section (stored as a section_visibility row) */
+async function toggleSection(key){
+  if(!sb||!isAdmin) return;
+  const cur=vis[key], hide=!(cur&&cur.hidden), v=hide?"hidden":"visible";
+  const res=cur&&cur.id
+    ? await sb.from("resume_data").update({subtitle:v}).eq("id",cur.id)
+    : await sb.from("resume_data").insert({category:"section_visibility",title:key,subtitle:v,sort_order:0});
+  if(res.error){toast("Couldn’t update visibility: "+res.error.message);return}
+  toast(hide?"Section hidden from the public":"Section is visible again"); loadResume();
+}
+
+/* admin: add / delete items (edit text inline, then Save changes) */
+const NEWROW={education:"New institution",skill:"New skill group",project:"New project",language:"New language",certification:"New certification",extracurricular:"New group"};
+async function addItem(cat){
+  if(!canEdit()) return;
+  const {error}=await sb.from("resume_data").insert({category:cat,title:NEWROW[cat],sort_order:rrows.reduce((m,x)=>Math.max(m,x.sort_order||0),0)+1});
+  if(error){toast("Couldn’t add: "+error.message);return}
+  toast("Item added. Click its dashed text to edit"); loadResume();
+}
 async function removeRow(r){
-  if(!confirm(`Delete “${r.title}”?`)) return;
+  if(!confirm(`Delete “${val(r,"title")||"this item"}”?`)) return;
   const {error}=await sb.from("resume_data").delete().eq("id",r.id);
   if(error){toast("Couldn’t delete: "+error.message);return}
-  toast("Item deleted"); loadResume();
+  delete dirty[r.id]; toast("Item deleted"); loadResume();
 }
 $("importresume").onclick=async()=>{
   if(!sb||!isAdmin) return;
@@ -794,7 +922,7 @@ $("importresume").onclick=async()=>{
   if(error){toast("Couldn’t import: "+error.message);return}
   toast("Default resume data imported"); loadResume();
 };
- 
+
 /* theme + scroll */
 const root=document.documentElement; let saved=null; try{saved=localStorage.getItem("theme")}catch(e){}
 root.dataset.theme=saved||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");

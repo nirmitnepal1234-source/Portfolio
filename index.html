@@ -86,6 +86,25 @@ h2{font:800 clamp(2rem,4.5vw,3rem)/1.1 var(--display);letter-spacing:-.02em;marg
 body.admin [data-edit]{outline:2px dashed color-mix(in srgb,var(--g2) 60%,transparent);outline-offset:6px;border-radius:6px;cursor:text}
 body.admin [data-edit]:focus{outline:2px solid var(--g2);background:var(--glow)}
  
+[hidden]{display:none!important}
+/* contact links */
+.links{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;max-width:760px;margin:0 auto}
+.chip-wrap{display:inline-flex;align-items:center;gap:6px}
+.chip{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:46px;padding:10px 20px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;font:600 .96rem var(--font);text-decoration:none;box-shadow:var(--shadow);transition:transform .2s,border-color .2s,background .2s,box-shadow .2s}
+.chip .ico{width:19px;height:19px;flex:none;color:var(--g2);transition:transform .25s}
+.chip:hover{transform:translateY(-3px);border-color:var(--g2);background:var(--soft)}
+.chip:hover .ico{transform:scale(1.15) rotate(-6deg)}
+.chip.solid{background:var(--g1);color:var(--on-accent);border-color:transparent}
+.chip.solid .ico{color:currentColor}
+.chip.solid:hover{background:var(--g1);box-shadow:0 10px 24px -10px var(--g2)}
+.chip.solid.done{background:var(--g2);color:#fff}
+.chip.solid span{min-width:5.6em;text-align:left}
+.chip-ctl{display:inline-flex;gap:4px}
+.link-tools{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin-top:22px}
+body.admin .chip-wrap{padding:4px 4px 4px 0;border-radius:999px;outline:2px dashed color-mix(in srgb,var(--g2) 55%,transparent);outline-offset:3px}
+select{max-width:100%}
+dialog select{width:100%}
+ 
 /* rating scale */
 .legend{background:linear-gradient(135deg,var(--soft),color-mix(in srgb,var(--soft) 40%,var(--card)));border:1px solid var(--line);border-radius:24px;padding:clamp(18px,3vw,26px)}
 .legend-top{margin-bottom:18px}
@@ -165,6 +184,11 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
   .toast{max-width:90vw;text-align:center;border-radius:18px}
 }
 @media (max-width:520px){
+  .links{gap:10px}
+  .chip-wrap{flex:1 1 calc(50% - 10px)}
+  .chip-wrap .chip{flex:1;padding:10px 12px;font-size:.9rem}
+  .chip.solid{flex:1 1 100%}
+  body.admin .chip-wrap{flex-basis:100%}
   .tiers{gap:10px}
   .tier{min-height:0;padding:14px;gap:10px}
   .tier-top{flex-direction:column;align-items:flex-start}
@@ -234,7 +258,11 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
   <section id="contact" class="contact"><div class="wrap">
     <h2>Let’s build something</h2>
     <p class="lead" data-edit="contact_lead">Questions, ideas or opportunities are all welcome.</p>
-    <a class="btn" href="mailto:you@example.com">Email Nirmit</a>
+    <div class="links" id="links" aria-live="polite"></div>
+    <div class="link-tools">
+      <button class="pill admin-only" id="addlink">+ Add contact link</button>
+      <button class="pill admin-only" id="importlinks" hidden>Import default links</button>
+    </div>
   </div></section>
 </main>
 <footer>© <span id="year"></span> Nirmit Nepal</footer>
@@ -248,6 +276,16 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
     <label>Category<input type="text" name="cat" required maxlength="40" placeholder="e.g. Developer tools"></label>
     <label>Score: <output id="out">5</output> / 10<input type="range" name="score" min="0" max="10" value="5"></label>
     <div class="actions"><button type="button" class="pill" data-close>Cancel</button><button class="btn" id="save-skill">Save skill</button></div>
+  </form>
+</dialog>
+ 
+<dialog id="cdlg">
+  <form id="cform">
+    <h3 id="cdlg-title">Add a contact link</h3>
+    <label>Label<input type="text" name="label" required maxlength="30" placeholder="e.g. GitHub"></label>
+    <label>URL<input type="text" name="url" required maxlength="300" placeholder="https://github.com/your-name"></label>
+    <label>Icon<select name="icon" id="cicon"></select></label>
+    <div class="actions"><button type="button" class="pill" data-close>Cancel</button><button class="btn" id="save-link">Save link</button></div>
   </form>
 </dialog>
  
@@ -284,7 +322,7 @@ const SAMPLE = [
 ];
 const TIERS = [[0,3,"Learning the basics"],[4,6,"Can complete guided tasks"],[7,8,"Can work independently on familiar tasks"],[9,10,"Advanced, can explain trade-offs and help others"]];
 const tierOf = s => s<=3?0 : s<=6?1 : s<=8?2 : 3;
-const label = s => ["Learning the basics","Can complete guided tasks","Independent on familiar tasks","Advanced, can help others"][tierOf(s)];
+const label = s => s === 0 ? "Not started yet" : ["Learning the basics","Can complete guided tasks","Independent on familiar tasks","Advanced, can help others"][tierOf(s)];
  
 function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove("show"),3200)}
  
@@ -417,6 +455,114 @@ if(sb){
   sb.auth.onAuthStateChange((_e,session)=>setAdmin(!!session));
 }
  
+/* ====== Contact links (Supabase table: contact_links) ====== */
+const EMAIL = "nirmitnepal1234@gmail.com";
+const ICONS = {
+  gmail:{name:"Email / Gmail",svg:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>'},
+  github:{name:"GitHub",svg:'<path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>'},
+  linkedin:{name:"LinkedIn",svg:'<path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>'},
+  instagram:{name:"Instagram",svg:'<rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>'},
+  youtube:{name:"YouTube",svg:'<path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/>'},
+  link:{name:"Website / other",svg:'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>'},
+  copy:{name:"Copy",svg:'<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>'}
+};
+const DEFAULT_LINKS = [
+  {label:"Gmail",url:"https://mail.google.com/mail/?view=cm&fs=1&to="+EMAIL,icon:"gmail"},
+  {label:"GitHub",url:"https://github.com/nirmitnepal1234-source",icon:"github"},
+  {label:"LinkedIn",url:"https://linkedin.com/in/nirmit-nepal-564342441",icon:"linkedin"},
+  {label:"Instagram",url:"https://www.instagram.com/nirmit_nepal/",icon:"instagram"}
+];
+let links = [], linksFallback = false;
+const svgIcon = k => `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${(ICONS[k]||ICONS.link).svg}</svg>`;
+function safeUrl(u){
+  u=(u||"").trim(); if(!u) return "#";
+  if(/^(https?:|mailto:)/i.test(u)) return u;
+  if(/^[^\s@\/]+@[^\s@\/]+\.[^\s@\/]+$/.test(u)) return "mailto:"+u;
+  return "https://"+u.replace(/^\/+/,"");
+}
+$("cicon").innerHTML = Object.keys(ICONS).filter(k=>k!=="copy").map(k=>`<option value="${k}">${ICONS[k].name}</option>`).join("");
+ 
+function renderLinks(){
+  const box=$("links"); box.innerHTML="";
+  links.forEach(l=>{
+    const w=document.createElement("div"); w.className="chip-wrap";
+    const a=document.createElement("a");
+    a.className="chip"; a.href=safeUrl(l.url); a.target="_blank"; a.rel="noopener noreferrer";
+    a.innerHTML=svgIcon(l.icon);
+    const t=document.createElement("span"); t.textContent=l.label; a.append(t); w.append(a);
+    if(!linksFallback){
+      const c=document.createElement("span"); c.className="chip-ctl admin-only";
+      c.innerHTML='<button type="button" class="icon-btn sm" data-a="edit" aria-label="Edit link">✎</button><button type="button" class="icon-btn sm" data-a="del" aria-label="Delete link">✕</button>';
+      c.querySelector('[data-a=edit]').onclick=()=>openLink(l);
+      c.querySelector('[data-a=del]').onclick=()=>removeLink(l);
+      w.append(c);
+    }
+    box.append(w);
+  });
+  const cp=document.createElement("button");
+  cp.type="button"; cp.className="chip solid"; cp.innerHTML=svgIcon("copy")+"<span>Copy Email</span>";
+  cp.setAttribute("aria-label","Copy email address "+EMAIL);
+  cp.onclick=()=>copyEmail(cp); box.append(cp);
+  $("importlinks").hidden=!(linksFallback&&sb);
+}
+async function copyEmail(btn){
+  let ok=false;
+  try{await navigator.clipboard.writeText(EMAIL);ok=true}catch(e){
+    const t=document.createElement("textarea"); t.value=EMAIL; t.style.cssText="position:fixed;opacity:0";
+    document.body.append(t); t.select(); try{ok=document.execCommand("copy")}catch(_){} t.remove();
+  }
+  const sp=btn.querySelector("span"); sp.textContent=ok?"Copied!":"Copy failed";
+  btn.classList.toggle("done",ok);
+  toast(ok?"Email copied to clipboard":"Couldn’t copy. Email: "+EMAIL);
+  clearTimeout(btn.t); btn.t=setTimeout(()=>{sp.textContent="Copy Email";btn.classList.remove("done")},2000);
+}
+async function loadLinks(){
+  if(!sb){links=DEFAULT_LINKS;linksFallback=true;renderLinks();return}
+  const {data,error}=await sb.from("contact_links").select("*").order("sort_order").order("created_at");
+  if(error) console.error(error);
+  if(error||!data||!data.length){links=DEFAULT_LINKS;linksFallback=true}
+  else{links=data;linksFallback=false}
+  renderLinks();
+}
+ 
+/* admin: add / edit / delete links */
+const cdlg=$("cdlg"), cform=$("cform"); let editingLink=null;
+function openLink(l){
+  editingLink=l||null; $("cdlg-title").textContent=l?"Edit contact link":"Add a contact link";
+  cform.label.value=l?l.label:""; cform.url.value=l?l.url:""; cform.icon.value=l&&ICONS[l.icon]?l.icon:"link";
+  cform.icon.dataset.touched=l?"1":""; cdlg.showModal();
+}
+$("addlink").onclick=()=>openLink();
+cform.icon.onchange=()=>{cform.icon.dataset.touched="1"};
+cform.url.oninput=()=>{
+  if(cform.icon.dataset.touched) return;
+  const u=cform.url.value.toLowerCase();
+  cform.icon.value = u.includes("mail.google")||u.startsWith("mailto:")?"gmail":u.includes("github")?"github":u.includes("linkedin")?"linkedin":u.includes("instagram")?"instagram":(u.includes("youtube")||u.includes("youtu.be"))?"youtube":"link";
+};
+cform.addEventListener("submit",async e=>{
+  e.preventDefault(); if(!sb||!isAdmin) return;
+  const row={label:cform.label.value.trim(),url:safeUrl(cform.url.value),icon:cform.icon.value};
+  const btn=$("save-link"); btn.disabled=true;
+  const res = editingLink
+    ? await sb.from("contact_links").update(row).eq("id",editingLink.id)
+    : await sb.from("contact_links").insert({...row,sort_order:(linksFallback?0:links.reduce((m,x)=>Math.max(m,x.sort_order||0),0))+1});
+  btn.disabled=false;
+  if(res.error){toast("Couldn’t save: "+res.error.message);return}
+  cdlg.close(); toast(editingLink?"Link updated":"Link added"); loadLinks();
+});
+async function removeLink(l){
+  if(!confirm(`Delete “${l.label}”?`)) return;
+  const {error}=await sb.from("contact_links").delete().eq("id",l.id);
+  if(error){toast("Couldn’t delete: "+error.message);return}
+  toast("Link deleted"); loadLinks();
+}
+$("importlinks").onclick=async()=>{
+  if(!sb||!isAdmin) return;
+  const {error}=await sb.from("contact_links").insert(DEFAULT_LINKS.map((l,i)=>({...l,sort_order:i+1})));
+  if(error){toast("Couldn’t import: "+error.message);return}
+  toast("Default links imported"); loadLinks();
+};
+ 
 /* theme + scroll */
 const root=document.documentElement; let saved=null; try{saved=localStorage.getItem("theme")}catch(e){}
 root.dataset.theme=saved||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");
@@ -424,7 +570,7 @@ $("theme").onclick=()=>{root.dataset.theme=root.dataset.theme==="dark"?"light":"
 addEventListener("scroll",()=>{const h=document.documentElement;$("progress").style.transform=`scaleX(${h.scrollTop/(h.scrollHeight-h.clientHeight||1)})`},{passive:true});
 $("year").textContent=new Date().getFullYear();
  
-loadSkills(); loadContent();
+loadSkills(); loadContent(); loadLinks();
 </script>
 </body>
 </html>

@@ -891,15 +891,45 @@ function applyTopVis(){
 }
 setTimeout(()=>document.body.classList.remove("vis-pending"),4000); // safety net
 
-/* admin: show / hide a whole section (stored as a section_visibility row) */
-async function toggleSection(key){
-  if(!sb||!isAdmin) return;
-  const cur=vis[key], hide=!(cur&&cur.hidden), v=hide?"hidden":"visible";
-  const res=cur&&cur.id
-    ? await sb.from("resume_data").update({subtitle:v}).eq("id",cur.id)
-    : await sb.from("resume_data").insert({category:"section_visibility",title:key,subtitle:v,sort_order:0});
-  if(res.error){toast("Couldn’t update visibility: "+res.error.message);return}
-  toast(hide?"Section hidden from the public":"Section is visible again"); loadResume();
+async function toggleSection(key) {
+  if (!sb || !isAdmin) return;
+
+  const cur = vis[key];
+  const hide = !(cur && cur.hidden);
+  const value = hide ? "hidden" : "visible";
+
+  const res = cur?.id
+    ? await sb.from("resume_data")
+        .update({ subtitle: value })
+        .eq("id", cur.id)
+        .select()
+    : await sb.from("resume_data")
+        .insert({
+          category: "section_visibility",
+          title: key,
+          subtitle: value,
+          sort_order: 0
+        })
+        .select();
+
+  if (res.error || !res.data?.length) {
+    toast("Visibility update failed. Check Supabase permissions.");
+    console.error(res.error || "No database rows updated");
+    return;
+  }
+
+  vis[key] = {
+    id: res.data[0].id,
+    hidden: hide
+  };
+
+  renderResume();
+
+  toast(
+    hide
+      ? "🙈 Section hidden from public"
+      : "👁️ Section visible to public"
+  );
 }
 
 /* admin: add / delete items (edit text inline, then Save changes) */

@@ -87,6 +87,67 @@ body.admin [data-edit]{outline:2px dashed color-mix(in srgb,var(--g2) 60%,transp
 body.admin [data-edit]:focus{outline:2px solid var(--g2);background:var(--glow)}
  
 [hidden]{display:none!important}
+/* resume */
+.rhead{display:grid;gap:22px;padding:8px 0 34px;border-bottom:1px solid var(--line)}
+.rtop{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:18px}
+.rname{font:800 clamp(1.9rem,4.2vw,2.7rem)/1.1 var(--display);letter-spacing:-.02em;margin:0}
+.rrole{margin:6px 0 0;color:var(--muted);font-size:1.05rem}
+.ractions{display:flex;flex-wrap:wrap;gap:10px}
+.ractions .ico{width:18px;height:18px}
+.rcontact{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px 32px}
+.rcontact li{display:grid;gap:2px;line-height:1.5;overflow-wrap:anywhere}
+.rcontact small{color:var(--muted);font-size:.82rem}
+.rcontact a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line);transition:border-color .2s,color .2s}
+.rcontact a:hover{border-color:var(--g2);color:var(--g2)}
+.rlinks{display:flex;flex-wrap:wrap;gap:10px}
+.chip.sm{min-height:38px;padding:7px 15px;font-size:.88rem;box-shadow:none}
+.chip.sm .ico{width:17px;height:17px}
+.rsec{padding:38px 0;border-bottom:1px solid var(--line)}
+.rsec:last-child{border-bottom:0}
+body:not(.admin) .rsec.empty{display:none}
+.rsec-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:22px}
+.rsec-head h3{margin:0;font:700 1.25rem var(--display);letter-spacing:-.01em;display:flex;align-items:center;gap:12px}
+.rsec-head h3::before{content:"";width:20px;height:3px;border-radius:3px;background:var(--g2);flex:none}
+.ph{color:var(--muted);opacity:.7}
+.note{color:var(--muted);font-size:.88rem;margin:16px 0 0}
+.ritem{position:relative}
+body.admin .ritem:not(.lang){padding-right:78px}
+.rctl{position:absolute;top:0;right:0;display:inline-flex;gap:4px}
+.lang .rctl{position:static;margin-left:6px}
+.r-edu{list-style:none;margin:0;padding:0 0 0 26px;position:relative;display:grid;gap:26px}
+.r-edu::before{content:"";position:absolute;left:5px;top:8px;bottom:8px;width:2px;background:linear-gradient(var(--g2),var(--line))}
+.r-edu li{display:grid;grid-template-columns:140px 1fr;gap:4px 24px}
+.r-edu li::before{content:"";position:absolute;left:-26px;top:7px;width:12px;height:12px;border-radius:50%;background:var(--bg);border:3px solid var(--g2)}
+.r-edu li:first-child::before{background:var(--g2);box-shadow:0 0 0 5px var(--glow)}
+.r-edu .when{color:var(--g2);font-weight:700;font-size:.95rem;padding-top:2px}
+.r-edu h4{margin:0;font:700 1.12rem/1.35 var(--display)}
+.r-edu .deg{margin:3px 0 0;font-size:.98rem}
+.r-edu .loc{margin:2px 0 0;color:var(--muted);font-size:.9rem}
+.r-skills{display:grid}
+.skl{display:grid;grid-template-columns:180px 1fr;gap:8px 24px;padding:16px 0;border-top:1px dashed var(--line)}
+.skl:first-child{border-top:0;padding-top:0}
+.skl-name{font-weight:600;color:var(--muted);padding-top:5px}
+.tags{display:flex;flex-wrap:wrap;gap:8px}
+.tag{background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:4px 14px;font-weight:600;font-size:.88rem;line-height:1.5}
+.tag.learn{background:transparent;border-style:dashed;color:var(--muted);font-weight:500}
+.tags.sm .tag{font-size:.8rem;padding:2px 11px}
+.r-proj{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:18px}
+.proj{border:1px solid var(--line);border-radius:18px;padding:20px 22px;background:var(--card);transition:transform .3s,border-color .3s}
+.proj:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--g2) 55%,var(--line))}
+.proj h4{margin:0 0 10px;font:700 1.1rem var(--display)}
+.proj .det{margin:12px 0 0;color:var(--muted);font-size:.95rem;line-height:1.65}
+.r-lang{display:flex;flex-wrap:wrap;gap:12px}
+.lang{display:inline-flex;align-items:baseline;gap:8px;padding:8px 18px;border:1px solid var(--line);border-radius:999px;background:var(--card)}
+.lang b{font-weight:700}.lang span{color:var(--muted);font-size:.9rem}
+.r-cert{list-style:none;margin:0;padding:0;display:grid;gap:18px}
+.r-cert b{display:block}.r-cert small{color:var(--muted);font-size:.9rem}
+.r-cert p{margin:4px 0 0;color:var(--muted)}
+.r-xc{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:26px}
+.xc h4{margin:0 0 6px;font:700 1.02rem var(--display)}
+.xc p{margin:0;color:var(--muted);line-height:1.65}
+textarea{font:inherit;padding:11px 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);resize:vertical;min-height:84px}
+textarea:focus{border-color:var(--g2);outline:none;box-shadow:0 0 0 3px var(--glow)}
+dialog{max-height:90vh;overflow:auto}
 /* contact links */
 .links{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;max-width:760px;margin:0 auto}
 .chip-wrap{display:inline-flex;align-items:center;gap:6px}
@@ -174,6 +235,10 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
  
 @media (max-width:900px){.tiers{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:720px){
+  .r-edu li{grid-template-columns:1fr}
+  .skl{grid-template-columns:1fr;gap:10px}
+  .rsec{padding:30px 0}
+  .ractions{width:100%}.ractions .btn{flex:1}
   .nav a.l{display:none}
   .nav-in{padding:8px 8px 8px 16px}
   .nav ul{gap:8px}
@@ -214,6 +279,7 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
     <nav aria-label="Main"><ul>
       <li><a class="l" href="#about">About</a></li>
       <li><a class="l" href="#skills">Skills</a></li>
+      <li><a class="l" href="#resume">Resume</a></li>
       <li><a class="l" href="#contact">Contact</a></li>
       <li><button class="login" id="login">Admin login</button></li>
       <li><button class="icon-btn" id="theme" aria-label="Toggle dark mode">◐</button></li>
@@ -255,6 +321,33 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
     <ul class="grid" id="grid"></ul>
   </div></section>
  
+  <section id="resume"><div class="wrap">
+    <h2>Resume &amp; background</h2>
+    <p class="lead">Where I study, what I build with and what I’m still learning.</p>
+ 
+    <header class="rhead">
+      <div class="rtop">
+        <div>
+          <h3 class="rname">Nirmit Nepal</h3>
+          <p class="rrole" data-edit="resume_role">CSE Student | Aspiring Software Developer</p>
+        </div>
+        <div class="ractions">
+          <a class="btn" href="resume.pdf" download="Nirmit-Nepal-Resume.pdf"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download Resume</a>
+          <a class="btn ghost" href="resume.pdf" target="_blank" rel="noopener noreferrer">View</a>
+        </div>
+      </div>
+      <ul class="rcontact">
+        <li><small>Email</small><a href="mailto:nirmitnepal1234@gmail.com">nirmitnepal1234@gmail.com</a></li>
+        <li><small>Phone</small><span><a href="tel:+919234179508">+91 9234179508</a> · <a href="tel:+9779803080969">+977 9803080969</a></span></li>
+        <li><small>Location</small><span data-edit="resume_location">Yelahanka, Bengaluru, Karnataka, India</span></li>
+      </ul>
+      <div class="rlinks" id="rlinks"></div>
+    </header>
+ 
+    <div id="rbody"></div>
+    <div class="link-tools"><button class="pill admin-only" id="importresume" hidden>Import default resume data</button></div>
+  </div></section>
+ 
   <section id="contact" class="contact"><div class="wrap">
     <h2>Let’s build something</h2>
     <p class="lead" data-edit="contact_lead">Questions, ideas or opportunities are all welcome.</p>
@@ -286,6 +379,21 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
     <label>URL<input type="text" name="url" required maxlength="300" placeholder="https://github.com/your-name"></label>
     <label>Icon<select name="icon" id="cicon"></select></label>
     <div class="actions"><button type="button" class="pill" data-close>Cancel</button><button class="btn" id="save-link">Save link</button></div>
+  </form>
+</dialog>
+ 
+<dialog id="rdlg">
+  <form id="rform">
+    <h3 id="rdlg-title">Add resume item</h3>
+    <label>Section<select name="category" id="rcat"></select></label>
+    <label data-f="title"><span>Title</span><input type="text" name="title" maxlength="120"></label>
+    <label data-f="subtitle"><span>Subtitle</span><input type="text" name="subtitle" maxlength="160"></label>
+    <label data-f="period"><span>Period</span><input type="text" name="period" maxlength="60"></label>
+    <label data-f="location"><span>Location</span><input type="text" name="location" maxlength="120"></label>
+    <label data-f="tags"><span>Tags</span><input type="text" name="tags" maxlength="300"></label>
+    <label data-f="learning"><span>Learning</span><input type="text" name="learning" maxlength="300"></label>
+    <label data-f="details"><span>Details</span><textarea name="details" maxlength="800"></textarea></label>
+    <div class="actions"><button type="button" class="pill" data-close>Cancel</button><button class="btn" id="save-ritem">Save</button></div>
   </form>
 </dialog>
  
@@ -322,7 +430,7 @@ const SAMPLE = [
 ];
 const TIERS = [[0,3,"Learning the basics"],[4,6,"Can complete guided tasks"],[7,8,"Can work independently on familiar tasks"],[9,10,"Advanced, can explain trade-offs and help others"]];
 const tierOf = s => s<=3?0 : s<=6?1 : s<=8?2 : 3;
-const label = s => s === 0 ? "Not started yet" : ["Learning the basics","Can complete guided tasks","Independent on familiar tasks","Advanced, can help others"][tierOf(s)];
+const label = s => +s === 0 ? "Not started yet" : ["Learning the basics","Can complete guided tasks","Independent on familiar tasks","Advanced, can help others"][tierOf(s)];
  
 function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove("show"),3200)}
  
@@ -565,6 +673,128 @@ $("importlinks").onclick=async()=>{
   toast("Default links imported"); loadLinks();
 };
  
+/* ====== Resume (Supabase table: resume_data) ====== */
+const RLINKS=[
+  {label:"GitHub",url:"https://github.com/nirmitnepal1234-source",icon:"github"},
+  {label:"LinkedIn",url:"https://linkedin.com/in/nirmit-nepal-564342441/",icon:"linkedin"},
+  {label:"Portfolio",url:"https://nirmitn.vercel.app",icon:"link"}
+];
+RLINKS.forEach(l=>{
+  const a=document.createElement("a"); a.className="chip sm"; a.href=l.url; a.target="_blank"; a.rel="noopener noreferrer";
+  a.innerHTML=svgIcon(l.icon); const t=document.createElement("span"); t.textContent=l.label; a.append(t); $("rlinks").append(a);
+});
+const RCATS=[
+  {key:"education",title:"Education",f:{title:"Institution",subtitle:"Degree / programme",period:"Years / grades",location:"Location"}},
+  {key:"skill",title:"Technical skills",f:{title:"Group name",tags:"Skills (comma-separated)",learning:"Still learning (comma-separated, shown dashed)"}},
+  {key:"project",title:"Projects",f:{title:"Project name",tags:"Tech stack (comma-separated)",details:"Details"}},
+  {key:"language",title:"Languages spoken",f:{title:"Language",subtitle:"Level"}},
+  {key:"certification",title:"Certifications & online courses",f:{title:"Certification / course",subtitle:"Issuer / platform",period:"Date",details:"Notes"}},
+  {key:"extracurricular",title:"Extracurriculars, achievements & community",f:{title:"Group (e.g. Clubs & Societies)",details:"Details"}}
+];
+const DEFAULT_RESUME=[
+  {category:"education",title:"B.M.S. Institute of Technology and Management (BMSIT&M), VTU",subtitle:"B.E. / B.Tech in CSE · 1st semester",period:"2026 – 2030",location:"Bengaluru, Karnataka, India"},
+  {category:"education",title:"Himalayan Whitehouse International College",subtitle:"+2 Science · NEB High School Diploma",period:"2025",location:"Kathmandu, Nepal"},
+  {category:"education",title:"DAV Sushil Kedia Vishwa Bharati Higher Secondary School",subtitle:"Secondary Education",period:"Grades 7 – 10",location:"Kathmandu, Nepal"},
+  {category:"education",title:"Aksharaa School",subtitle:"Middle School",period:"Grades 1 – 6",location:"Kathmandu, Nepal"},
+  {category:"skill",title:"Languages",tags:"Python, C, C++, JavaScript, HTML, CSS",learning:"Java, SQL"},
+  {category:"skill",title:"Web & Frameworks",tags:"Supabase",learning:"React, Node.js, Express, Tailwind CSS, REST APIs"},
+  {category:"skill",title:"Developer Tools",tags:"Git, GitHub, VS Code, Vercel"},
+  {category:"skill",title:"Core Competencies",tags:"Problem-Solving, Object-Oriented Design, Basic Database Management, Web Accessibility"},
+  {category:"project",title:"Personal Portfolio Website",tags:"HTML5, CSS3, JavaScript, Supabase, Vercel",details:"Built and deployed a responsive personal portfolio with dark mode, dynamic admin-managed contact options, and Supabase integration."},
+  {category:"project",title:"CLI / Console Applications",tags:"Python / C++",details:"--"},
+  {category:"project",title:"Automation Scripts",tags:"Python",details:"--"},
+  {category:"project",title:"Web Applications",tags:"JavaScript / Supabase",details:"--"},
+  {category:"language",title:"Nepali",subtitle:"Native"},
+  {category:"language",title:"Hindi",subtitle:"Fluent"},
+  {category:"language",title:"English",subtitle:"Professional / Fluent"},
+  {category:"certification",title:"--"},
+  {category:"extracurricular",title:"Coding Platforms",details:"--"},
+  {category:"extracurricular",title:"Clubs & Societies",details:"--"},
+  {category:"extracurricular",title:"Competitions & Events",details:"--"}
+];
+let rrows=[], rFallback=false;
+function setTxt(e,t){e.textContent=t; if((t||"").trim()==="--") e.classList.add("ph")}
+function mk(tag,cls,txt){const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) setTxt(e,txt); return e}
+const csv=v=>(v||"").split(",").map(x=>x.trim()).filter(Boolean);
+function addCtl(el,row,cat){
+  if(rFallback) return;
+  const c=mk("span","rctl admin-only");
+  c.innerHTML='<button type="button" class="icon-btn sm" data-a="edit" aria-label="Edit item">✎</button><button type="button" class="icon-btn sm" data-a="del" aria-label="Delete item">✕</button>';
+  c.querySelector('[data-a=edit]').onclick=()=>openRow(cat,row);
+  c.querySelector('[data-a=del]').onclick=()=>removeRow(row);
+  el.append(c);
+}
+const BUILD={
+  education:(rows,cat)=>{const ol=mk("ol","r-edu");rows.forEach(r=>{const li=mk("li","ritem");li.append(mk("div","when",r.period||""));const d=mk("div");d.append(mk("h4",null,r.title));if(r.subtitle)d.append(mk("p","deg",r.subtitle));if(r.location)d.append(mk("p","loc",r.location));li.append(d);addCtl(li,r,cat);ol.append(li)});return ol},
+  skill:(rows,cat)=>{const w=mk("div","r-skills");let any=false;rows.forEach(r=>{const row=mk("div","skl ritem");row.append(mk("div","skl-name",r.title));const t=mk("div","tags");csv(r.tags).forEach(x=>t.append(mk("span","tag",x)));csv(r.learning).forEach(x=>{const e=mk("span","tag learn",x);e.title="Currently learning";t.append(e);any=true});row.append(t);addCtl(row,r,cat);w.append(row)});if(any)w.append(mk("p","note","Dashed tags are things I’m still learning."));return w},
+  project:(rows,cat)=>{const g=mk("div","r-proj");rows.forEach(r=>{const c=mk("article","proj ritem");c.append(mk("h4",null,r.title));const tg=csv(r.tags);if(tg.length){const t=mk("div","tags sm");tg.forEach(x=>t.append(mk("span","tag",x)));c.append(t)}c.append(mk("p","det",r.details||"--"));addCtl(c,r,cat);g.append(c)});return g},
+  language:(rows,cat)=>{const g=mk("div","r-lang");rows.forEach(r=>{const l=mk("div","lang ritem");l.append(mk("b",null,r.title));if(r.subtitle)l.append(mk("span",null,r.subtitle));addCtl(l,r,cat);g.append(l)});return g},
+  certification:(rows,cat)=>{const ul=mk("ul","r-cert");rows.forEach(r=>{const li=mk("li","ritem");li.append(mk("b",null,r.title));const m=[r.subtitle,r.period].filter(Boolean).join(" · ");if(m)li.append(mk("small",null,m));if(r.details)li.append(mk("p",null,r.details));addCtl(li,r,cat);ul.append(li)});return ul},
+  extracurricular:(rows,cat)=>{const g=mk("div","r-xc");rows.forEach(r=>{const x=mk("div","xc ritem");x.append(mk("h4",null,r.title));x.append(mk("p",null,r.details||"--"));addCtl(x,r,cat);g.append(x)});return g}
+};
+function renderResume(){
+  const box=$("rbody"); box.innerHTML="";
+  RCATS.forEach(cat=>{
+    const rows=rrows.filter(r=>r.category===cat.key);
+    const sec=mk("div","rsec"+(rows.length?"":" empty")); if(cat.key==="education") sec.id="education-list";
+    const head=mk("div","rsec-head"); head.append(mk("h3",null,cat.title));
+    const add=mk("button","pill admin-only","+ Add"); add.type="button"; add.onclick=()=>openRow(cat.key); head.append(add);
+    sec.append(head);
+    sec.append(rows.length?BUILD[cat.key](rows,cat.key):mk("p","note","Nothing here yet. Use + Add to create the first entry."));
+    box.append(sec);
+  });
+  $("importresume").hidden=!(rFallback&&sb);
+}
+async function loadResume(){
+  if(!sb){rrows=DEFAULT_RESUME;rFallback=true;renderResume();return}
+  const {data,error}=await sb.from("resume_data").select("*").order("sort_order").order("created_at");
+  if(error) console.error(error);
+  if(error||!data||!data.length){rrows=DEFAULT_RESUME;rFallback=true}
+  else{rrows=data;rFallback=false}
+  renderResume();
+}
+/* admin: add / edit / delete resume items */
+const rdlg=$("rdlg"), rform=$("rform"), RF=["title","subtitle","period","location","tags","learning","details"]; let editingRow=null;
+const rel=n=>rform.elements[n];
+$("rcat").innerHTML=RCATS.map(c=>`<option value="${c.key}">${c.title}</option>`).join("");
+function syncRFields(){
+  const cat=RCATS.find(c=>c.key===rel("category").value);
+  RF.forEach(f=>{const lab=rform.querySelector(`[data-f="${f}"]`),t=cat.f[f];lab.hidden=!t;if(t)lab.querySelector("span").textContent=t;rel(f).required=(f==="title")});
+}
+rel("category").onchange=syncRFields;
+function openRow(catKey,row){
+  if(rFallback&&sb){toast("Click “Import default resume data” first, then edit the items");return}
+  editingRow=row||null;
+  $("rdlg-title").textContent=row?"Edit item":"Add resume item";
+  rel("category").value=catKey; rel("category").disabled=!!row; syncRFields();
+  RF.forEach(f=>{rel(f).value=row?(row[f]||""):""});
+  rdlg.showModal();
+}
+rform.addEventListener("submit",async e=>{
+  e.preventDefault(); if(!sb||!isAdmin) return;
+  const row={category:rel("category").value};
+  RF.forEach(f=>{row[f]=rform.querySelector(`[data-f="${f}"]`).hidden?"":rel(f).value.trim()});
+  const btn=$("save-ritem"); btn.disabled=true;
+  const res=editingRow
+    ? await sb.from("resume_data").update(row).eq("id",editingRow.id)
+    : await sb.from("resume_data").insert({...row,sort_order:rrows.reduce((m,x)=>Math.max(m,x.sort_order||0),0)+1});
+  btn.disabled=false;
+  if(res.error){toast("Couldn’t save: "+res.error.message);return}
+  rdlg.close(); toast(editingRow?"Item updated":"Item added"); loadResume();
+});
+async function removeRow(r){
+  if(!confirm(`Delete “${r.title}”?`)) return;
+  const {error}=await sb.from("resume_data").delete().eq("id",r.id);
+  if(error){toast("Couldn’t delete: "+error.message);return}
+  toast("Item deleted"); loadResume();
+}
+$("importresume").onclick=async()=>{
+  if(!sb||!isAdmin) return;
+  const {error}=await sb.from("resume_data").insert(DEFAULT_RESUME.map((r,i)=>({...r,sort_order:i+1})));
+  if(error){toast("Couldn’t import: "+error.message);return}
+  toast("Default resume data imported"); loadResume();
+};
+ 
 /* theme + scroll */
 const root=document.documentElement; let saved=null; try{saved=localStorage.getItem("theme")}catch(e){}
 root.dataset.theme=saved||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");
@@ -572,7 +802,7 @@ $("theme").onclick=()=>{root.dataset.theme=root.dataset.theme==="dark"?"light":"
 addEventListener("scroll",()=>{const h=document.documentElement;$("progress").style.transform=`scaleX(${h.scrollTop/(h.scrollHeight-h.clientHeight||1)})`},{passive:true});
 $("year").textContent=new Date().getFullYear();
  
-loadSkills(); loadContent(); loadLinks();
+loadSkills(); loadContent(); loadLinks(); loadResume();
 </script>
 </body>
 </html>

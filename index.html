@@ -857,16 +857,56 @@ function renderResume(){
   $("importresume").hidden=!imp; $("abnote").hidden=!imp;
   applyTopVis(); document.body.classList.remove("vis-pending");
 }
-async function loadResume(){
-  vis={};
-  if(!sb){rrows=DEFAULT_RESUME;rFallback=true;renderResume();return}
-  const {data,error}=await sb.from("resume_data").select("*").order("sort_order").order("created_at");
-  if(error) console.error(error);
-  const all=data||[];
-  all.filter(r=>r.category==="section_visibility").forEach(r=>{vis[r.title]={id:r.id,hidden:r.subtitle==="hidden"}});
-  const content=all.filter(r=>r.category!=="section_visibility");
-  if(error||!content.length){rrows=DEFAULT_RESUME;rFallback=true}
-  else{rrows=content;rFallback=false}
+async function loadResume() {
+  if (!sb) {
+    vis = {};
+    rrows = DEFAULT_RESUME;
+    rFallback = true;
+    renderResume();
+    return;
+  }
+
+  const { data, error } = await sb
+    .from("resume_data")
+    .select("*")
+    .order("sort_order")
+    .order("created_at");
+
+  if (error) {
+    console.error("Resume loading failed:", error);
+    toast("Couldn't load resume settings.");
+    return;
+  }
+
+  const all = data || [];
+
+  const savedVisibility = all.filter(
+    row => row.category === "section_visibility"
+  );
+
+  console.log("Visibility records loaded:", savedVisibility);
+
+  vis = {};
+
+  savedVisibility.forEach(row => {
+    vis[row.title] = {
+      id: row.id,
+      hidden: row.subtitle === "hidden"
+    };
+  });
+
+  const content = all.filter(
+    row => row.category !== "section_visibility"
+  );
+
+  if (!content.length) {
+    rrows = DEFAULT_RESUME;
+    rFallback = true;
+  } else {
+    rrows = content;
+    rFallback = false;
+  }
+
   renderResume();
 }
 
@@ -898,38 +938,34 @@ async function toggleSection(key) {
   const hide = !(cur && cur.hidden);
   const value = hide ? "hidden" : "visible";
 
-  const res = cur?.id
-    ? await sb.from("resume_data")
+  const query = cur?.id
+    ? sb.from("resume_data")
         .update({ subtitle: value })
         .eq("id", cur.id)
-        .select()
-    : await sb.from("resume_data")
+    : sb.from("resume_data")
         .insert({
           category: "section_visibility",
           title: key,
           subtitle: value,
           sort_order: 0
-        })
-        .select();
+        });
 
-  if (res.error || !res.data?.length) {
-    toast("Visibility update failed. Check Supabase permissions.");
-    console.error(res.error || "No database rows updated");
+  const { data, error } = await query.select();
+
+  if (error || !data?.length) {
+    console.error("Visibility save failed:", error);
+    toast("Failed to save visibility. Check console.");
     return;
   }
 
   vis[key] = {
-    id: res.data[0].id,
+    id: data[0].id,
     hidden: hide
   };
 
   renderResume();
 
-  toast(
-    hide
-      ? "🙈 Section hidden from public"
-      : "👁️ Section visible to public"
-  );
+  toast(hide ? "🙈 Hidden from public" : "👁️ Visible to public");
 }
 
 /* admin: add / delete items (edit text inline, then Save changes) */

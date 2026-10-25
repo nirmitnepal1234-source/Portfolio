@@ -240,48 +240,16 @@ input[type=range]{accent-color:var(--g2)}
 .actions{display:flex;justify-content:flex-end;gap:10px;margin-top:6px}
 .err{color:#c0392b;font-size:.9rem;min-height:1.3em;margin:0 0 6px}
  
-.adminbar{position:static;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px;background:var(--g1);color:var(--bg);padding:8px 16px;font-size:.92rem;font-weight:500;pointer-events:auto}
-.adminbar.bottom{padding:12px 16px}
+.adminbar{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:25;display:flex;align-items:center;gap:12px;background:var(--g1);color:var(--bg);padding:8px 8px 8px 18px;border-radius:26px;flex-wrap:wrap;justify-content:center;box-shadow:0 14px 40px -12px rgba(0,0,0,.5);font-size:.92rem;font-weight:500;max-width:94vw}
+body.admin footer{padding-bottom:90px}
 .adminbar .pill{background:var(--bg);color:var(--ink);border:0;padding:8px 16px}
-.adminbar .pill:disabled{opacity:.6;cursor:wait}
 .toast{position:fixed;top:84px;left:50%;transform:translate(-50%,-20px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:500;opacity:0;pointer-events:none;transition:.3s;z-index:40}
 .toast.show{opacity:1;transform:translate(-50%,0)}
  
-.contact{text-align:center;padding-bottom:60px}
+.contact{text-align:center;padding-bottom:120px}
 .contact .lead{margin-inline:auto}
 footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;border-top:1px solid var(--line)}
  
-/* section visibility + clickability */
-.vhide{display:none!important}
-body.vis-pending [data-vkey]{visibility:hidden}
-.h2row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 10px}
-.h2row h2{margin:0}
-section.is-hidden .h2row h2{opacity:.5}
-button,a,.eye,.pill,.icon-btn,[data-edit],.redit,.adminbar{pointer-events:auto}
-body.admin .eye{display:grid}
-
-/* print-ready resume */
-@media print{
-  @page{margin:14mm}
-  html,html[data-theme=dark]{--bg:#fff;--card:#fff;--ink:#000;--muted:#333;--line:#bbb;--soft:#fff;--g1:#000;--g2:#14452f;--g3:#14452f;--glow:transparent;--shadow:none;--on-accent:#000}
-  body{background:#fff!important;color:#000;font-size:11pt;line-height:1.45;overflow:visible}
-  #progress,.blobs,.nav,.toast,.marquee,.hero,#about,#skills,#contact,footer,.adminbar,.ractions,.admin-only,.eye,.hbadge,.pill,.icon-btn,.login,dialog,.rsec.is-hidden,#resume>.wrap>h2,#resume>.wrap>.lead{display:none!important}
-  body.admin [data-edit],body.admin .redit{outline:none!important;background:none!important}
-  section{padding:0!important}
-  .wrap{width:100%}
-  .rhead{padding:0 0 12px}
-  .rsec{padding:14px 0;break-inside:avoid;border-bottom:1px solid #bbb}
-  .rsec-head{margin-bottom:10px}
-  .rsec-head h3{font-size:13pt;text-transform:uppercase;letter-spacing:.04em}
-  .rlinks .chip{border:0;padding:0;min-height:0;box-shadow:none;background:none;font-size:10pt}
-  .rlinks .chip .ico{display:none}
-  .proj,.ritem,.skl,.lang{break-inside:avoid;box-shadow:none}
-  .proj{border:1px solid #bbb}
-  .tag{background:none;border:1px solid #999}
-  .r-edu li::before{background:#fff!important;box-shadow:none!important}
-  *{animation:none!important;transition:none!important}
-  a{color:#000;text-decoration:none}
-}
 @media (max-width:900px){.tiers{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:720px){
   .r-edu li{grid-template-columns:1fr}
@@ -294,7 +262,7 @@ body.admin .eye{display:grid}
   .sub{font-size:1.05rem}
   .bar-row{flex-direction:column;align-items:stretch;gap:10px}
   .tools{width:100%}.tools select{flex:1;min-width:0}
-  .adminbar{font-size:.85rem;padding:10px 12px}
+  .adminbar{left:12px;right:12px;transform:none;border-radius:22px;flex-wrap:wrap;justify-content:space-between;padding:10px 10px 10px 16px;font-size:.85rem}
   .toast{max-width:90vw;text-align:center;border-radius:18px}
 }
 @media (max-width:520px){
@@ -317,8 +285,7 @@ body.admin .eye{display:grid}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition-duration:.01ms!important}h1 .ch{transform:none;opacity:1}}
 </style>
 </head>
-<body class="vis-pending">
-<div class="adminbar admin-only" role="toolbar" aria-label="Admin toolbar"><span>Admin mode · click any dashed text to edit, then Save · 👁️ / 🙈 shows or hides a section for the public</span><span class="abnote" id="abnote" hidden>Resume is showing default data. Import it to enable editing.</span><button class="pill" id="importresume" hidden>Import default resume data</button><button class="pill savetext">Save changes</button></div>
+<body>
 <div id="progress"></div>
 <div class="blobs" aria-hidden="true"><i></i><i></i></div>
 <div class="toast" id="toast" role="status"></div>
@@ -327,8 +294,8 @@ body.admin .eye{display:grid}
   <div class="nav-in">
     <a class="logo" href="#top">Nirmit Nepal</a>
     <nav aria-label="Main"><ul>
-      <li data-vkey="about"><a class="l" href="#about">About</a></li>
-      <li data-vkey="skills_section"><a class="l" href="#skills">Skills</a></li>
+      <li><a class="l" href="#about">About</a></li>
+      <li><a class="l" href="#skills">Skills</a></li>
       <li><a class="l" href="#resume">Resume</a></li>
       <li><a class="l" href="#contact">Contact</a></li>
       <li><button class="login" id="login">Admin login</button></li>
@@ -344,7 +311,7 @@ body.admin .eye{display:grid}
     <p class="sub" data-edit="hero_sub">I’m a student developer who likes turning ideas into clean, working software, and I keep honest scores on how far I’ve come.</p>
     <div class="cta"><a class="btn" href="#skills">See my skills</a><a class="btn ghost" href="#contact">Get in touch</a></div>
   </div>
-  <div class="marquee" data-vkey="skills_section" aria-hidden="true"><div class="track" id="track"></div></div>
+  <div class="marquee" aria-hidden="true"><div class="track" id="track"></div></div>
  
   <section id="about" class="about"><div class="wrap">
     <h2>About me</h2>
@@ -382,9 +349,8 @@ body.admin .eye{display:grid}
           <p class="rrole" data-edit="resume_role">CSE Student | Aspiring Software Developer</p>
         </div>
         <div class="ractions">
-          <a class="btn" href="resume.pdf" download="Nirmit_Nepal_Resume.pdf"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download Resume</a>
+          <a class="btn" href="resume.pdf" download="Nirmit-Nepal-Resume.pdf"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download Resume</a>
           <a class="btn ghost" href="resume.pdf" target="_blank" rel="noopener noreferrer">View</a>
-          <button class="btn ghost" type="button" id="printresume">Print</button>
         </div>
       </div>
       <ul class="rcontact">
@@ -409,9 +375,9 @@ body.admin .eye{display:grid}
   </div></section>
 </main>
 <footer>© <span id="year"></span> Nirmit Nepal</footer>
-<div class="adminbar bottom admin-only" role="toolbar" aria-label="Admin save bar"><span>Done editing?</span><button class="pill savetext">Save changes</button></div>
  
-
+<div class="adminbar admin-only"><span>Admin mode · click any dashed text to edit</span><span class="abnote" id="abnote" hidden>Resume is showing default data. Import it to enable editing.</span><button class="pill" id="importresume" hidden>Import default resume data</button><button class="pill" id="savetext">Save changes</button></div>
+ 
 <dialog id="dlg">
   <form id="form">
     <h3 id="dlg-title">Add a skill</h3>
@@ -567,9 +533,9 @@ document.querySelectorAll("[data-edit]").forEach(el=>el.addEventListener("paste"
   if(!isAdmin) return; e.preventDefault();
   document.execCommand("insertText",false,e.clipboardData.getData("text/plain"));
 }));
-async function saveAll(){
+$("savetext").onclick=async()=>{
   if(!sb||!isAdmin) return;
-  const btns=document.querySelectorAll(".savetext"); btns.forEach(b=>b.disabled=true);
+  const btn=$("savetext"); btn.disabled=true;
   const rows=[...document.querySelectorAll("[data-edit]")].map(el=>({key:el.dataset.edit,value:el.textContent.trim()}));
   const t=await sb.from("site_content").upsert(rows);
   let failed=t.error?t.error.message:"";
@@ -580,11 +546,9 @@ async function saveAll(){
     const row=rrows.find(x=>String(x.id)===id); if(row) Object.assign(row,patch);
     delete dirty[id];
   }
-  btns.forEach(b=>b.disabled=false);
+  btn.disabled=false;
   toast(failed?"Couldn’t save: "+failed:"Changes saved");
-}
-document.querySelectorAll(".savetext").forEach(b=>b.onclick=saveAll);
-$("printresume").onclick=()=>window.print();
+};
  
 /* ====== Auth ====== */
 function setAdmin(on){
@@ -593,7 +557,6 @@ function setAdmin(on){
   document.querySelectorAll("[data-edit]").forEach(el=>el.contentEditable=on?"true":"false");
   if(skills.length) view();
   try{ if(rrows.length) renderResume(); }catch(e){}
-  try{ applyTopVis(); }catch(e){}
 }
 const ldlg=$("ldlg"), lform=$("lform");
 $("login").onclick=async()=>{
@@ -763,9 +726,6 @@ const DEFAULT_RESUME=[
   {category:"extracurricular",title:"Competitions & Events",details:"--"}
 ];
 let rrows=[], rFallback=false, vis={}, dirty={};
-/* visibility rule: public sees a section only if it is not hidden; admin ALWAYS sees every section */
-const sectionHidden=k=>!!(vis[k]&&vis[k].hidden);
-const showSection=k=>isAdmin||!sectionHidden(k);
 function setTxt(e,t){e.textContent=t; if((t||"").trim()==="--") e.classList.add("ph")}
 function mk(tag,cls,txt){const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) setTxt(e,txt); return e}
 const put=(p,...c)=>{c.forEach(x=>{if(x) p.append(x)});return p};
@@ -837,8 +797,8 @@ const BUILD={
 function renderResume(){
   const box=$("rbody"); box.innerHTML="";
   RCATS.forEach(cat=>{
-    const hidden=sectionHidden(cat.key);
-    if(!showSection(cat.key)) return;                 // public: skipped entirely. Admin: always rendered
+    const hidden=!!(vis[cat.key]&&vis[cat.key].hidden);
+    if(hidden&&!isAdmin) return;                      // public visitors never see hidden sections
     const rows=rrows.filter(r=>r.category===cat.key);
     const sec=mk("div","rsec"+(rows.length?"":" empty")+(hidden?" is-hidden":""));
     if(cat.key==="education") sec.id="education-list";
@@ -858,119 +818,29 @@ function renderResume(){
   });
   const imp=!!(rFallback&&sb);
   $("importresume").hidden=!imp; $("abnote").hidden=!imp;
-  applyTopVis(); document.body.classList.remove("vis-pending");
 }
-async function loadResume() {
-  if (!sb) {
-    vis = {};
-    rrows = DEFAULT_RESUME;
-    rFallback = true;
-    renderResume();
-    return;
-  }
-
-  const { data, error } = await sb
-    .from("resume_data")
-    .select("*")
-    .order("sort_order")
-    .order("created_at");
-
-  if (error) {
-    console.error("Resume loading failed:", error);
-    toast("Couldn't load resume settings.");
-    document.body.classList.remove("vis-pending");
-    return;
-  }
-
-  const all = data || [];
-
-  const savedVisibility = all.filter(
-    row => row.category === "section_visibility"
-  );
-
-  console.log("Visibility records loaded:", savedVisibility);
-
-  vis = {};
-
-  savedVisibility.forEach(row => {
-    vis[row.title] = {
-      id: row.id,
-      hidden: row.subtitle === "hidden"
-    };
-  });
-
-  const content = all.filter(
-    row => row.category !== "section_visibility"
-  );
-
-  if (!content.length) {
-    rrows = DEFAULT_RESUME;
-    rFallback = true;
-  } else {
-    rrows = content;
-    rFallback = false;
-  }
-
+async function loadResume(){
+  vis={};
+  if(!sb){rrows=DEFAULT_RESUME;rFallback=true;renderResume();return}
+  const {data,error}=await sb.from("resume_data").select("*").order("sort_order").order("created_at");
+  if(error) console.error(error);
+  const all=data||[];
+  all.filter(r=>r.category==="section_visibility").forEach(r=>{vis[r.title]={id:r.id,hidden:r.subtitle==="hidden"}});
+  const content=all.filter(r=>r.category!=="section_visibility");
+  if(error||!content.length){rrows=DEFAULT_RESUME;rFallback=true}
+  else{rrows=content;rFallback=false}
   renderResume();
 }
 
-/* eye toggles for About + Skills (same section_visibility rows as resume sections) */
-const TOPSEC=[{key:"about",id:"about"},{key:"skills_section",id:"skills"}];
-TOPSEC.forEach(t=>{
-  const sec=$(t.id), h2=sec.querySelector("h2"), row=document.createElement("div");
-  row.className="h2row"; h2.replaceWith(row); row.append(h2);
-  t.eye=mk("button","eye admin-only"); t.eye.type="button"; t.eye.onclick=()=>toggleSection(t.key);
-  t.badge=mk("span","hbadge admin-only","Hidden from public"); t.badge.hidden=true;
-  row.append(t.eye,t.badge); t.sec=sec;
-});
-function applyTopVis(){
-  TOPSEC.forEach(t=>{
-    const hidden=sectionHidden(t.key), gone=!showSection(t.key);
-    t.sec.classList.toggle("is-hidden",hidden); t.sec.classList.toggle("vhide",gone);
-    t.eye.textContent=hidden?"🙈":"👁️";
-    t.eye.title=hidden?"Hidden from public. Click to show":"Visible to everyone. Click to hide";
-    t.eye.setAttribute("aria-label",t.eye.title); t.badge.hidden=!hidden;
-    document.querySelectorAll(`[data-vkey="${t.key}"]`).forEach(el=>el.classList.toggle("vhide",gone));
-  });
-}
-setTimeout(()=>document.body.classList.remove("vis-pending"),4000); // safety net
-
-async function toggleSection(key) {
-  if (!sb || !isAdmin) return;
-
-  const cur = vis[key];
-  const hide = !(cur && cur.hidden);
-  const value = hide ? "hidden" : "visible";
-
-  const query = cur?.id
-    ? sb.from("resume_data")
-        .update({ subtitle: value })
-        .eq("category", "section_visibility")
-        .eq("title", key)
-    : sb.from("resume_data")
-        .insert({
-          category: "section_visibility",
-          title: key,
-          subtitle: value,
-          sort_order: 0
-        });
-
-  const { data, error } = await query.select();
-
-  if (error || !data?.length) {
-    console.error("Visibility save failed:", error);
-    toast("Failed to save visibility. Check console.");
-    return;
-  }
-
-  vis[key] = {
-    id: data[0].id,
-    hidden: hide
-  };
-
-  renderResume();
-
-  toast(hide ? "🙈 Hidden from public" : "👁️ Visible to public");
+/* admin: show / hide a whole section (stored as a section_visibility row) */
+async function toggleSection(key){
+  if(!sb||!isAdmin) return;
+  const cur=vis[key], hide=!(cur&&cur.hidden), v=hide?"hidden":"visible";
+  const res=cur&&cur.id
+    ? await sb.from("resume_data").update({subtitle:v}).eq("id",cur.id)
+    : await sb.from("resume_data").insert({category:"section_visibility",title:key,subtitle:v,sort_order:0});
+  if(res.error){toast("Couldn’t update visibility: "+res.error.message);return}
+  toast(hide?"Section hidden from the public":"Section is visible again"); loadResume();
 }
 
 /* admin: add / delete items (edit text inline, then Save changes) */

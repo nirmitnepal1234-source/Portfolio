@@ -763,6 +763,9 @@ const DEFAULT_RESUME=[
   {category:"extracurricular",title:"Competitions & Events",details:"--"}
 ];
 let rrows=[], rFallback=false, vis={}, dirty={};
+/* visibility rule: public sees a section only if it is not hidden; admin ALWAYS sees every section */
+const sectionHidden=k=>!!(vis[k]&&vis[k].hidden);
+const showSection=k=>isAdmin||!sectionHidden(k);
 function setTxt(e,t){e.textContent=t; if((t||"").trim()==="--") e.classList.add("ph")}
 function mk(tag,cls,txt){const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) setTxt(e,txt); return e}
 const put=(p,...c)=>{c.forEach(x=>{if(x) p.append(x)});return p};
@@ -834,8 +837,8 @@ const BUILD={
 function renderResume(){
   const box=$("rbody"); box.innerHTML="";
   RCATS.forEach(cat=>{
-    const hidden=!!(vis[cat.key]&&vis[cat.key].hidden);
-    if(hidden&&!isAdmin) return;                      // public visitors never see hidden sections
+    const hidden=sectionHidden(cat.key);
+    if(!showSection(cat.key)) return;                 // public: skipped entirely. Admin: always rendered
     const rows=rrows.filter(r=>r.category===cat.key);
     const sec=mk("div","rsec"+(rows.length?"":" empty")+(hidden?" is-hidden":""));
     if(cat.key==="education") sec.id="education-list";
@@ -875,6 +878,7 @@ async function loadResume() {
   if (error) {
     console.error("Resume loading failed:", error);
     toast("Couldn't load resume settings.");
+    document.body.classList.remove("vis-pending");
     return;
   }
 
@@ -921,7 +925,7 @@ TOPSEC.forEach(t=>{
 });
 function applyTopVis(){
   TOPSEC.forEach(t=>{
-    const hidden=!!(vis[t.key]&&vis[t.key].hidden), gone=hidden&&!isAdmin;
+    const hidden=sectionHidden(t.key), gone=!showSection(t.key);
     t.sec.classList.toggle("is-hidden",hidden); t.sec.classList.toggle("vhide",gone);
     t.eye.textContent=hidden?"🙈":"👁️";
     t.eye.title=hidden?"Hidden from public. Click to show":"Visible to everyone. Click to hide";
@@ -941,7 +945,8 @@ async function toggleSection(key) {
   const query = cur?.id
     ? sb.from("resume_data")
         .update({ subtitle: value })
-        .eq("id", cur.id)
+        .eq("category", "section_visibility")
+        .eq("title", key)
     : sb.from("resume_data")
         .insert({
           category: "section_visibility",

@@ -14,7 +14,7 @@
   --track:#dfe9e0; --shadow:0 1px 2px rgba(16,38,26,.06),0 14px 34px -18px rgba(16,38,26,.22);
   --grad:linear-gradient(90deg,#14452f,#2a8a56 55%,#4fae5e);
   --on-accent:#f4f8f2; --ghost-bd:#9fc3a9;
-  --orb-o:.55; --orb1:#bfe8c4; --orb2:#b5e2dc; --orb3:#d0d6f6;
+  --orb-o:.9; --orb1:#a4dcb0; --orb2:#97d6cc; --orb3:#bfc9f2;
   --display:'Bricolage Grotesque',Georgia,sans-serif; --font:'Instrument Sans',system-ui,sans-serif;
 }
 html[data-theme=dark]{
@@ -23,7 +23,7 @@ html[data-theme=dark]{
   --track:#1b3024; --shadow:0 12px 32px -16px rgba(0,0,0,.6);
   --grad:linear-gradient(90deg,#9bd06a,#58b06e 55%,#c8ec8a);
   --on-accent:#0b1710; --ghost-bd:#3d6b4c;
-  --orb-o:.16; --orb1:#10b981; --orb2:#14b8a6; --orb3:#6366f1;
+  --orb-o:.34; --orb1:#0c6e4c; --orb2:#0b6466; --orb3:#3a3b9c;
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
@@ -37,10 +37,10 @@ body:not(.admin) .admin-only{display:none!important}
 #progress{position:fixed;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,var(--g2),var(--g3));transform:scaleX(0);transform-origin:left;z-index:30}
 /* ambient mesh gradient: 3 large blurred orbs, colours + opacity come from the theme variables (--orb-o, --orb1..3) */
 .blobs{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;contain:strict}
-.blobs i{position:absolute;border-radius:50%;filter:blur(100px);opacity:var(--orb-o);pointer-events:none;will-change:transform;transform:translate3d(0,0,0);backface-visibility:hidden}
-.blobs i:nth-child(1){width:58vmax;height:46vmax;top:-16vmax;left:-14vmax;background:var(--orb1);animation:orbA 22s ease-in-out infinite alternate}
-.blobs i:nth-child(2){width:50vmax;height:42vmax;bottom:-18vmax;right:-14vmax;background:var(--orb2);animation:orbB 25s ease-in-out infinite alternate}
-.blobs i:nth-child(3){width:40vmax;height:34vmax;top:34%;left:36%;background:var(--orb3);animation:orbC 19s ease-in-out infinite alternate}
+.blobs i{position:absolute;border-radius:50%;filter:blur(70px);opacity:var(--orb-o);pointer-events:none;will-change:transform;transform:translate3d(0,0,0);backface-visibility:hidden}
+.blobs i:nth-child(1){width:58vmax;height:46vmax;top:-16vmax;left:-14vmax;background:radial-gradient(closest-side,var(--orb1),transparent);animation:orbA 22s ease-in-out infinite alternate}
+.blobs i:nth-child(2){width:50vmax;height:42vmax;bottom:-18vmax;right:-14vmax;background:radial-gradient(closest-side,var(--orb2),transparent);animation:orbB 25s ease-in-out infinite alternate}
+.blobs i:nth-child(3){width:40vmax;height:34vmax;top:34%;left:36%;background:radial-gradient(closest-side,var(--orb3),transparent);animation:orbC 19s ease-in-out infinite alternate}
 @keyframes orbA{0%{transform:translate3d(0,0,0) rotate(0deg) scale(1)}100%{transform:translate3d(14vmax,10vmax,0) rotate(28deg) scale(1.15)}}
 @keyframes orbB{0%{transform:translate3d(0,0,0) rotate(0deg) scale(1.1)}100%{transform:translate3d(-12vmax,-12vmax,0) rotate(-24deg) scale(.95)}}
 @keyframes orbC{0%{transform:translate3d(-8vmax,6vmax,0) rotate(0deg) scale(.9)}100%{transform:translate3d(10vmax,-8vmax,0) rotate(36deg) scale(1.12)}}
@@ -378,7 +378,7 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
   <section id="resume"><div class="wrap">
     <h2>Resume &amp; background</h2>
     <p class="lead">Where I study, what I build with and what I’m still learning.</p>
- 
+
     <header class="rhead">
       <div class="rtop">
         <div>
@@ -393,10 +393,10 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
       <ul class="rcontact" id="hcontact"></ul>
       <div class="rlinks" id="rlinks"></div>
     </header>
- 
+
     <div id="rbody"></div>
   </div></section>
- 
+
   <section id="contact" class="contact"><div class="wrap">
     <h2>Let’s build something</h2>
     <p class="lead" data-edit="contact_lead">Questions, ideas or opportunities are all welcome.</p>
@@ -439,7 +439,7 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
     <div class="actions"><button type="button" class="pill" data-close>Cancel</button><button class="btn" id="rsave">Add</button></div>
   </form>
 </dialog>
- 
+
 <dialog id="ldlg">
   <form id="lform">
     <h3>Admin login</h3>
@@ -584,9 +584,9 @@ $("savetext").onclick=async()=>{
   if(error){alert(error.message);return}
   toast("Page text saved");
 };
- 
- 
- 
+
+
+
  
 /* ====== Auth ====== */
 function setAdmin(on){
@@ -770,14 +770,14 @@ const DEFAULTS={
   certifications:[{title:"--"}],
   extracurriculars:[{title:"Coding Platforms",details:"--"},{title:"Clubs & Societies",details:"--"},{title:"Competitions & Events",details:"--"}]
 };
- 
+
 /* ---- state (always rebuilt from the database on load) ---- */
 let R={}, hidden={}, readErr="", preview=false, flashId=null, pending=0, tableEmpty=false;
 const adm=()=>isAdmin&&!preview;
 const canEdit=()=>!!(adm()&&sb);
 const clone=o=>JSON.parse(JSON.stringify(o));
 const uid=()=>Math.random().toString(36).slice(2,10);
- 
+
 /* ---- normalising whatever is stored (accepts older / differently named fields) ---- */
 const AL={title:["title","institution","name","school","project","language","course","group"],subtitle:["subtitle","degree","program","programme","level","issuer","platform"],period:["period","years","timeline","date","year"],location:["location"],tags:["tags","tech_stack","techStack","stack","technologies","skills","items"],learning:["learning"],details:["details","description","desc","notes"],link_text:["link_text","linkText","button_text","buttonText"],link_url:["link_url","linkUrl","url","link","href"]};
 const pick=(o,names)=>{for(const n of names){const v=o[n];if(v!=null&&v!=="") return Array.isArray(v)?v.join(", "):String(v)}return ""};
@@ -800,7 +800,7 @@ function normCat(key,c){
   const cat=RCATS.find(k=>k.key===key);
   return Array.isArray(c)?c.map(x=>normItem(cat,x)):clone(DEFAULTS[key]).map(x=>normItem(cat,x));
 }
- 
+
 /* ---- tiny DOM helpers ---- */
 function setTxt(e,t){e.textContent=t; if((t||"").trim()==="--") e.classList.add("ph")}
 function mk(tag,cls,txt){const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) setTxt(e,txt); return e}
@@ -812,7 +812,7 @@ addEventListener("beforeunload",e=>{if(pending){e.preventDefault();e.returnValue
 function fail(msg){
   alert(msg+(/is_visible/.test(msg)?"\n\nAdd the column in Supabase:\nalter table resume_data add column if not exists is_visible boolean default true;":""));
 }
- 
+
 /* ---- database ---- */
 async function dbw(q){
   const {data,error}=await q;
@@ -842,7 +842,7 @@ function setField(next,key,obj,f,v){
   if(key==="header"){ if(Array.isArray(obj)) next.phones[f]=v; else next[f]=v; return }
   const it=next.find(x=>x.id===obj.id); if(it) it[f]=v;
 }
- 
+
 /* ---- inline-editable text: saved to Supabase when you leave the field ---- */
 function ed(tag,cls,key,obj,f,ph,onSaved){
   const v=obj[f]||"";
@@ -871,7 +871,7 @@ function ctl(key,item,onlyDelete){
   return c;
 }
 const chips=(csvStr,cls)=>csv(csvStr).map(x=>mk("span",cls||"tag",x));
- 
+
 /* chip editor for Technical skills + Projects: click = dim / undim, double-click = rename, × = remove, input = add */
 function tagBox(key,item,cls){
   const box=mk("div","tagbox"+(cls?" "+cls:""));
@@ -917,7 +917,7 @@ function tagBox(key,item,cls){
   };
   paint(); return box;
 }
- 
+
 /* plain input for the project link label / URL: saved with upsert (saveSection) when you leave the field */
 function linkInput(key,obj,f,ph,max,onSaved){
   const i=document.createElement("input");
@@ -945,7 +945,7 @@ function linkBtn(r){
   a.innerHTML=svgIcon("link"); const t=document.createElement("span"); t.textContent=(r.link_text||"").trim()||"View project"; a.append(t);
   return a;
 }
- 
+
 /* ---- section builders ---- */
 const BUILD={
   education:(items,K)=>{const ol=mk("ol","r-edu");items.forEach(r=>{
@@ -998,7 +998,7 @@ const BUILD={
     x.append(put(mk("div","hrow"),ed("h4",null,K,r,"title","Group (e.g. Clubs & Societies)"),ctl(K,r)));
     put(x,ed("p",null,K,r,"details","Details")); g.append(x)});return g}
 };
- 
+
 /* ---- header & contact info (category "header") ---- */
 function renderHeader(){
   const h=R.header, K="header";
@@ -1030,7 +1030,7 @@ function renderHeader(){
   li("Phone",ph);
   li("Location",ed("span",null,K,h,"location","City, region, country"));
 }
- 
+
 /* ---- the whole resume ---- */
 function renderResume(){
   if(!R.header) return;
@@ -1064,7 +1064,7 @@ function renderResume(){
     flashId=null;
   }
 }
- 
+
 /* ---- load fresh data from Supabase on every page load ---- */
 async function loadResume(){
   R={}; hidden={}; readErr=""; tableEmpty=false;
@@ -1095,7 +1095,7 @@ async function seedDefaults(){
   tableEmpty=false; toast("Resume saved to the database");
 }
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",loadResume); else loadResume();
- 
+
 /* does a logged-out visitor really see what the admin saved? (separate anonymous client) */
 let pubClient=null, pubTimer=0;
 function verifyPublic(){
@@ -1118,7 +1118,7 @@ function verifyPublic(){
     el.textContent=msg; el.hidden=!msg;
   },300);
 }
- 
+
 /* ---- section visibility (is_visible column) ---- */
 async function toggleSection(key){
   if(!sb||!isAdmin) return;
@@ -1127,7 +1127,7 @@ async function toggleSection(key){
   if(res.error){fail(res.error);return}
   renderResume(); toast(hide?"Section hidden from visitors":"Section visible to visitors again"); verifyPublic();
 }
- 
+
 /* ---- add / edit dialog (same pattern as “Add a skill”) ---- */
 const rdlg=$("rdlg"), rform=$("rform"), rfields=$("rfields"), rerr=$("rerr"), rsave=$("rsave"); let formCat=null, formItem=null;
 function openForm(key,item){
@@ -1166,7 +1166,7 @@ $("previewbtn").onclick=()=>{
   preview=!preview; document.body.classList.toggle("preview",preview);
   $("previewbtn").textContent=preview?"Exit preview":"Preview as visitor"; renderResume();
 };
- 
+
 /* theme + scroll */
 const root=document.documentElement; let saved=null; try{saved=localStorage.getItem("theme")}catch(e){}
 root.dataset.theme=saved||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");

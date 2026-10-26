@@ -143,6 +143,9 @@ body.preview [data-edit]{outline:none!important}
 .tag-add{border:1px dashed var(--g2);background:transparent;color:var(--ink);border-radius:999px;padding:4px 14px;font:inherit;font-size:.88rem;width:120px;max-width:100%}
 .tag-add:focus{outline:none;box-shadow:0 0 0 3px var(--glow)}
 .tagbox.sm .tag{font-size:.8rem;padding:2px 8px 2px 11px}
+.ritem.flash{animation:flash 1.9s ease-out;border-radius:12px}
+@keyframes flash{0%,35%{box-shadow:0 0 0 3px var(--g2),0 0 26px var(--glow);background:var(--soft)}to{box-shadow:0 0 0 0 transparent}}
+#rdlg textarea{min-height:92px}
 .thint{color:var(--muted);font-size:.85rem;margin:14px 0 0}
 .r-edu{list-style:none;margin:0;padding:0 0 0 26px;position:relative;display:grid;gap:26px}
 .r-edu::before{content:"";position:absolute;left:5px;top:8px;bottom:8px;width:2px;background:linear-gradient(var(--g2),var(--line))}
@@ -355,7 +358,7 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
   <section id="resume"><div class="wrap">
     <h2>Resume &amp; background</h2>
     <p class="lead">Where I study, what I build with and what I’m still learning.</p>
-
+ 
     <header class="rhead">
       <div class="rtop">
         <div>
@@ -374,10 +377,10 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
       </ul>
       <div class="rlinks" id="rlinks"></div>
     </header>
-
+ 
     <div id="rbody"></div>
   </div></section>
-
+ 
   <section id="contact" class="contact"><div class="wrap">
     <h2>Let’s build something</h2>
     <p class="lead" data-edit="contact_lead">Questions, ideas or opportunities are all welcome.</p>
@@ -409,6 +412,15 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
     <label>URL<input type="text" name="url" required maxlength="300" placeholder="https://github.com/your-name"></label>
     <label>Icon<select name="icon" id="cicon"></select></label>
     <div class="actions"><button type="button" class="pill" data-close>Cancel</button><button class="btn" id="save-link">Save link</button></div>
+  </form>
+</dialog>
+ 
+<dialog id="rdlg" aria-labelledby="rdlg-title">
+  <form id="rform" autocomplete="off">
+    <h3 id="rdlg-title">Add</h3>
+    <div id="rfields"></div>
+    <p class="err" id="rerr" role="alert"></p>
+    <div class="actions"><button type="button" class="pill" data-close>Cancel</button><button class="btn" id="rsave">Add</button></div>
   </form>
 </dialog>
  
@@ -563,7 +575,7 @@ $("savetext").onclick=async()=>{
   btn.disabled=false; dirtyNote();
   toast(failed?"Couldn’t save: "+failed:"Changes saved");
 };
-
+ 
  
 /* ====== Auth ====== */
 function setAdmin(on){
@@ -716,12 +728,12 @@ RLINKS.forEach(l=>{
   a.innerHTML=svgIcon(l.icon); const t=document.createElement("span"); t.textContent=l.label; a.append(t); $("rlinks").append(a);
 });
 const RCATS=[
-  {key:"education",title:"Education",f:{title:"Institution",subtitle:"Degree / programme",period:"Years / grades",location:"Location"}},
-  {key:"skill",title:"Technical skills",f:{title:"Group name",tags:"Skills (comma-separated)",learning:"Still learning (comma-separated, shown dashed)"}},
-  {key:"project",title:"Projects",f:{title:"Project name",tags:"Tech stack (comma-separated)",details:"Details"}},
-  {key:"language",title:"Languages spoken",f:{title:"Language",subtitle:"Level"}},
-  {key:"certification",title:"Certifications & online courses",f:{title:"Certification / course",subtitle:"Issuer / platform",period:"Date",details:"Notes"}},
-  {key:"extracurricular",title:"Extracurriculars, achievements & community",f:{title:"Group (e.g. Clubs & Societies)",details:"Details"}}
+  {key:"education",title:"Education",add:"+ Add education",dlg:"Add education",f:[["title","Institution","e.g. B.M.S. Institute of Technology and Management",1],["subtitle","Degree / programme","e.g. B.E. / B.Tech in CSE"],["period","Years / grades","e.g. 2026 – 2030"],["location","Location","City, country"]]},
+  {key:"skill",title:"Technical skills",add:"+ Add a skill group",dlg:"Add a skill group",f:[["title","Group name","e.g. Databases",1],["tags","Skills (comma-separated)","e.g. MySQL, PostgreSQL"],["learning","Still learning (comma-separated, shown dimmed)","e.g. MongoDB"]]},
+  {key:"project",title:"Projects",add:"+ Add a project",dlg:"Add a project",f:[["title","Project name","e.g. Weather app",1],["tags","Tech stack (comma-separated)","e.g. Python, Flask, SQLite"],["details","Details","What it does and what you built",0,1]]},
+  {key:"language",title:"Languages spoken",add:"+ Add a language",dlg:"Add a language",f:[["title","Language","e.g. Spanish",1],["subtitle","Level","e.g. Beginner, Fluent, Native"]]},
+  {key:"certification",title:"Certifications & online courses",add:"+ Add a certification",dlg:"Add a certification",f:[["title","Certification / course","e.g. CS50x",1],["subtitle","Issuer / platform","e.g. Harvard / edX"],["period","Date","e.g. Aug 2026"],["details","Notes","Anything worth mentioning",0,1]]},
+  {key:"extracurricular",title:"Extracurriculars, achievements & community",add:"+ Add an activity",dlg:"Add an activity",f:[["title","Group (e.g. Clubs & Societies)","e.g. Coding club",1],["details","Details","Role, achievement or event",0,1]]}
 ];
 const DEFAULT_RESUME=[
   {category:"education",title:"B.M.S. Institute of Technology and Management (BMSIT&M), VTU",subtitle:"B.E. / B.Tech in CSE · 1st semester",period:"2026 – 2030",location:"Bengaluru, Karnataka, India"},
@@ -745,18 +757,19 @@ const DEFAULT_RESUME=[
   {category:"extracurricular",title:"Competitions & Events",details:"--"}
 ];
 const RT="resume_data", CATKEYS=RCATS.map(c=>c.key);
-let rrows=[], rFallback=false, vis={}, dirty={}, tagState={}, needsSeed=false, seeding=false, readErr="", preview=false, focusId=null;
+let rrows=[], rFallback=false, vis={}, dirty={}, tagState={}, needsSeed=false, seeding=false, readErr="", preview=false, flashId=null;
 const adm=()=>isAdmin&&!preview;
 const canEdit=()=>!!(adm()&&!rFallback&&sb);
 function setTxt(e,t){e.textContent=t; if((t||"").trim()==="--") e.classList.add("ph")}
 function mk(tag,cls,txt){const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) setTxt(e,txt); return e}
+const ri=(tag,cls,r)=>{const e=mk(tag,cls);e.dataset.id=r.id;return e};
 const put=(p,...c)=>{c.forEach(x=>{if(x) p.append(x)});return p};
 const csv=v=>(v||"").split(",").map(x=>x.trim()).filter(Boolean);
 const val=(row,f)=>dirty[row.id]&&f in dirty[row.id]?dirty[row.id][f]:(row[f]||"");
 function selectAll(el){const r=document.createRange();r.selectNodeContents(el);const g=getSelection();g.removeAllRanges();g.addRange(r)}
 function dirtyNote(){const n=Object.keys(dirty).length,e=$("dirtynote");e.hidden=!n;e.textContent="● "+n+" unsaved"}
 addEventListener("beforeunload",e=>{if(Object.keys(dirty).length){e.preventDefault();e.returnValue=""}});
-
+ 
 /* a write that must really change rows: Supabase silently returns 0 rows when RLS blocks an update/delete */
 async function dbw(q){
   const {data,error}=await q;
@@ -764,7 +777,7 @@ async function dbw(q){
   if(!data||!data.length) return {error:"blocked by database permissions (check your RLS policies)"};
   return {data};
 }
-
+ 
 /* single-line editable text: dashed + contenteditable for the admin, plain text (or nothing if empty) for visitors */
 function ed(tag,cls,row,f,ph){
   const v=val(row,f);
@@ -781,7 +794,7 @@ function delBtn(row){
   b.onclick=()=>removeRow(row); return b;
 }
 const chips=(csvStr,cls)=>csv(csvStr).map(x=>mk("span",cls||"tag",x));
-
+ 
 /* chip editor shared by Technical skills and Projects: click = dim / undim, double-click = rename, × = remove, input = add */
 function tagItems(row){
   if(!tagState[row.id]) tagState[row.id]=[...csv(val(row,"tags")).map(t=>({t,learn:false})),...csv(val(row,"learning")).map(t=>({t,learn:true}))];
@@ -829,16 +842,16 @@ function tagBox(row,cls){
   };
   paint(); return box;
 }
-
+ 
 const BUILD={
   education:rows=>{const ol=mk("ol","r-edu");rows.forEach(r=>{
-    const li=mk("li","ritem");
+    const li=ri("li","ritem",r);
     li.append(ed("div","when",r,"period","Years / grades")||mk("div","when",""));
     const d=mk("div"); d.append(put(mk("div","hrow"),ed("h4",null,r,"title","Institution"),delBtn(r)));
     put(d,ed("p","deg",r,"subtitle","Degree / programme"),ed("p","loc",r,"location","Location"));
     li.append(d); ol.append(li)});return ol},
   skill:rows=>{const w=mk("div","r-skills");let any=false;rows.forEach(r=>{
-    const row=mk("div","skl ritem");
+    const row=ri("div","skl ritem",r);
     row.append(put(mk("div","skl-name hrow"),ed("span",null,r,"title","Group name"),delBtn(r)));
     const box=mk("div");
     if(canEdit()) box.append(tagBox(r));
@@ -849,26 +862,26 @@ const BUILD={
     row.append(box); w.append(row)});
     if(any) w.append(mk("p","note","Dashed tags are things I’m still learning.")); return w},
   project:rows=>{const g=mk("div","r-proj");rows.forEach(r=>{
-    const c=mk("article","proj ritem");
+    const c=ri("article","proj ritem",r);
     c.append(put(mk("div","hrow"),ed("h4",null,r,"title","Project name"),delBtn(r)));
     if(canEdit()) c.append(tagBox(r,"sm"));
     else{const tg=[...chips(val(r,"tags")),...chips(val(r,"learning"),"tag learn")];if(tg.length) c.append(put(mk("div","tags sm"),...tg))}
     put(c,ed("p","det",r,"details","Details"));
     g.append(c)});return g},
   language:rows=>{const g=mk("div","r-lang");rows.forEach(r=>{
-    g.append(put(mk("div","lang ritem"),ed("b",null,r,"title","Language"),ed("span",null,r,"subtitle","Level"),delBtn(r)))});return g},
+    g.append(put(ri("div","lang ritem",r),ed("b",null,r,"title","Language"),ed("span",null,r,"subtitle","Level"),delBtn(r)))});return g},
   certification:rows=>{const ul=mk("ul","r-cert");rows.forEach(r=>{
-    const li=mk("li","ritem");
+    const li=ri("li","ritem",r);
     li.append(put(mk("div","hrow"),ed("b",null,r,"title","Certification / course"),delBtn(r)));
     const m=put(mk("div","meta"),ed("small",null,r,"subtitle","Issuer / platform"),ed("small",null,r,"period","Date"));
     if(m.children.length) li.append(m);
     put(li,ed("p",null,r,"details","Notes")); ul.append(li)});return ul},
   extracurricular:rows=>{const g=mk("div","r-xc");rows.forEach(r=>{
-    const x=mk("div","xc ritem");
+    const x=ri("div","xc ritem",r);
     x.append(put(mk("div","hrow"),ed("h4",null,r,"title","Group (e.g. Clubs & Societies)"),delBtn(r)));
     put(x,ed("p",null,r,"details","Details")); g.append(x)});return g}
 };
-
+ 
 function renderResume(){
   const box=$("rbody"); box.innerHTML="";
   RCATS.forEach(cat=>{
@@ -885,23 +898,23 @@ function renderResume(){
     left.append(eye);
     if(hidden) left.append(mk("span","hbadge admin-only","Hidden from public"));
     head.append(left);
-    if(canEdit()){const add=mk("button","pill admin-only","+ Add");add.type="button";add.onclick=()=>addItem(cat.key);head.append(add)}
+    if(canEdit()){const add=mk("button","pill admin-only",cat.add);add.type="button";add.onclick=()=>openAdd(cat.key);head.append(add)}
     sec.append(head);
     const body=mk("div","rsec-body");
-    body.append(rows.length?BUILD[cat.key](rows):mk("p","note","Nothing here yet."+(canEdit()?" Use + Add to create the first entry.":"")));
+    body.append(rows.length?BUILD[cat.key](rows):mk("p","note","Nothing here yet."+(canEdit()?" Use the Add button above to create the first entry.":"")));
     if(canEdit()&&(cat.key==="skill"||cat.key==="project")) body.append(mk("p","thint","Click a chip to dim / undim it · double-click to rename · × to remove · type in “+ add” to add more."));
     sec.append(body); box.append(sec);
   });
   const msg=readErr||(rFallback&&sb&&isAdmin?"Showing the built-in default resume. Import it to enable editing.":"");
   $("abnote").hidden=!msg; $("abnote").textContent=msg;
   $("importresume").hidden=!(rFallback&&sb);
-  if(focusId!=null){
-    const el=box.querySelector(`.redit[data-rid="${focusId}"]`);
-    if(el){el.scrollIntoView({block:"center",behavior:"smooth"});el.focus();selectAll(el)}
-    focusId=null;
+  if(flashId!=null){
+    const el=box.querySelector(`.ritem[data-id="${flashId}"]`);
+    if(el){el.scrollIntoView({block:"center",behavior:"smooth"});el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),2000)}
+    flashId=null;
   }
 }
-
+ 
 async function loadResume(){
   vis={}; readErr=""; needsSeed=false;
   Object.keys(tagState).forEach(id=>{if(!(dirty[id]&&"tags" in dirty[id])) delete tagState[id]});
@@ -927,7 +940,7 @@ async function seedDefaults(){
   if(res.error){readErr="Couldn’t create the default resume rows: "+res.error;return false}
   return true;
 }
-
+ 
 /* does a logged-out visitor really see what the admin saved? (uses a separate anonymous client) */
 let pubClient=null, pubTimer=0;
 function verifyPublic(){
@@ -950,7 +963,7 @@ function verifyPublic(){
     el.textContent=msg; el.hidden=!msg;
   },300);
 }
-
+ 
 /* admin: show / hide a whole section */
 async function toggleSection(key){
   if(!sb||!isAdmin) return;
@@ -964,15 +977,32 @@ async function toggleSection(key){
   toast(hide?"Section hidden from visitors":"Section visible to visitors again");
   verifyPublic();
 }
-
+ 
 /* admin: add / delete items (text is edited inline, then Save changes) */
-const NEWROW={education:"New institution",skill:"New skill group",project:"New project",language:"New language",certification:"New certification",extracurricular:"New group"};
-async function addItem(cat){
+const rdlg=$("rdlg"), rform=$("rform"), rfields=$("rfields"), rerr=$("rerr"), rsave=$("rsave"); let addCat=null;
+function openAdd(key){
   if(!canEdit()) return;
-  const res=await dbw(sb.from(RT).insert({category:cat,title:NEWROW[cat],sort_order:rrows.reduce((m,x)=>Math.max(m,x.sort_order||0),0)+1}).select());
-  if(res.error){toast("Couldn’t add: "+res.error);return}
-  rrows.push(res.data[0]); focusId=res.data[0].id; renderResume();
+  addCat=RCATS.find(c=>c.key===key); rerr.textContent="";
+  $("rdlg-title").textContent=addCat.dlg; rsave.textContent=addCat.dlg.replace(/^Add (an? )?/,"Add ");
+  rfields.innerHTML="";
+  addCat.f.forEach(([f,label,ph,req,area])=>{
+    const l=document.createElement("label"), i=document.createElement(area?"textarea":"input");
+    if(!area) i.type="text"; i.name=f; i.placeholder=ph||""; i.required=!!req; i.maxLength=area?800:(f==="tags"||f==="learning"?300:160);
+    l.append(label+(req?" *":""),i); rfields.append(l);
+  });
+  rform.reset(); rdlg.showModal(); rfields.querySelector("input,textarea").focus();
 }
+rform.addEventListener("submit",async e=>{
+  e.preventDefault(); if(!canEdit()||!addCat) return;
+  const row={category:addCat.key,sort_order:rrows.reduce((m,x)=>Math.max(m,x.sort_order||0),0)+1};
+  addCat.f.forEach(([f])=>{let v=rform.elements[f].value.trim(); if(f==="tags"||f==="learning") v=csv(v).join(", "); row[f]=v});
+  if(!row.title){rerr.textContent="Please fill in the required field.";return}
+  rsave.disabled=true; rerr.textContent="";
+  const res=await dbw(sb.from(RT).insert(row).select());
+  rsave.disabled=false;
+  if(res.error){rerr.textContent="Couldn’t save: "+res.error;return}
+  rdlg.close(); rrows.push(res.data[0]); flashId=res.data[0].id; renderResume(); toast("Added “"+row.title+"”");
+});
 async function removeRow(r){
   if(!confirm(`Delete “${val(r,"title")||"this item"}”?`)) return;
   const res=await dbw(sb.from(RT).delete().eq("id",r.id).select());
@@ -987,7 +1017,7 @@ $("previewbtn").onclick=()=>{
   preview=!preview; document.body.classList.toggle("preview",preview);
   $("previewbtn").textContent=preview?"Exit preview":"Preview as visitor"; renderResume();
 };
-
+ 
 /* theme + scroll */
 const root=document.documentElement; let saved=null; try{saved=localStorage.getItem("theme")}catch(e){}
 root.dataset.theme=saved||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");

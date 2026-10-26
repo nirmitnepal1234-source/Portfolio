@@ -14,8 +14,6 @@
   --track:#dfe9e0; --shadow:0 1px 2px rgba(16,38,26,.06),0 14px 34px -18px rgba(16,38,26,.22);
   --grad:linear-gradient(90deg,#14452f,#2a8a56 55%,#4fae5e);
   --on-accent:#f4f8f2; --ghost-bd:#9fc3a9;
-  --gl-bg:#f4f8f2; --gl-a:#8fd6a3; --gl-b:#7fd0c4; --gl-c:#b3c0f0; --gl-k:.8;
-  --orb-o:.9; --orb1:#a4dcb0; --orb2:#97d6cc; --orb3:#bfc9f2;
   --display:'Bricolage Grotesque',Georgia,sans-serif; --font:'Instrument Sans',system-ui,sans-serif;
 }
 html[data-theme=dark]{
@@ -24,8 +22,6 @@ html[data-theme=dark]{
   --track:#1b3024; --shadow:0 12px 32px -16px rgba(0,0,0,.6);
   --grad:linear-gradient(90deg,#9bd06a,#58b06e 55%,#c8ec8a);
   --on-accent:#0b1710; --ghost-bd:#3d6b4c;
-  --gl-bg:#0b1710; --gl-a:#0f8a5f; --gl-b:#0b7c80; --gl-c:#4a4bc4; --gl-k:.42;
-  --orb-o:.34; --orb1:#0c6e4c; --orb2:#0b6466; --orb3:#3a3b9c;
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
@@ -37,18 +33,14 @@ button{font:inherit;color:inherit;cursor:pointer}
 body:not(.admin) .admin-only{display:none!important}
  
 #progress{position:fixed;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,var(--g2),var(--g3));transform:scaleX(0);transform-origin:left;z-index:30}
-#gl{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:none}
-html.gl #gl{display:block}
-html.gl .blobs{display:none}
-/* ambient mesh gradient (CSS fallback when WebGL is unavailable): 3 large blurred orbs, colours + opacity come from the theme variables (--orb-o, --orb1..3) */
-.blobs{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;contain:strict}
-.blobs i{position:absolute;border-radius:50%;filter:blur(70px);opacity:var(--orb-o);pointer-events:none;will-change:transform;transform:translate3d(0,0,0);backface-visibility:hidden}
-.blobs i:nth-child(1){width:58vmax;height:46vmax;top:-16vmax;left:-14vmax;background:radial-gradient(closest-side,var(--orb1),transparent);animation:orbA 22s ease-in-out infinite alternate}
-.blobs i:nth-child(2){width:50vmax;height:42vmax;bottom:-18vmax;right:-14vmax;background:radial-gradient(closest-side,var(--orb2),transparent);animation:orbB 25s ease-in-out infinite alternate}
-.blobs i:nth-child(3){width:40vmax;height:34vmax;top:34%;left:36%;background:radial-gradient(closest-side,var(--orb3),transparent);animation:orbC 19s ease-in-out infinite alternate}
-@keyframes orbA{0%{transform:translate3d(0,0,0) rotate(0deg) scale(1)}100%{transform:translate3d(14vmax,10vmax,0) rotate(28deg) scale(1.15)}}
-@keyframes orbB{0%{transform:translate3d(0,0,0) rotate(0deg) scale(1.1)}100%{transform:translate3d(-12vmax,-12vmax,0) rotate(-24deg) scale(.95)}}
-@keyframes orbC{0%{transform:translate3d(-8vmax,6vmax,0) rotate(0deg) scale(.9)}100%{transform:translate3d(10vmax,-8vmax,0) rotate(36deg) scale(1.12)}}
+.blobs{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.blobs i{position:absolute;width:48vmax;height:48vmax;border-radius:50%;filter:blur(90px);opacity:.5;animation:drift 22s ease-in-out infinite alternate}
+.blobs i:nth-child(1){background:#c6e8b8;top:-18vmax;left:-12vmax}
+.blobs i:nth-child(2){background:#d6efc4;bottom:-22vmax;right:-14vmax;animation-delay:-9s}
+html[data-theme=dark] .blobs i{opacity:.22}
+html[data-theme=dark] .blobs i:nth-child(1){background:#1e5c3a}
+html[data-theme=dark] .blobs i:nth-child(2){background:#2d6b34}
+@keyframes drift{to{transform:translate(8vmax,6vmax) scale(1.15)}}
  
 .nav{position:sticky;top:max(12px,env(safe-area-inset-top));z-index:20;margin:12px auto 0;width:min(1080px,92%)}
 .nav-in{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 10px 20px;background:color-mix(in srgb,var(--card) 80%,transparent);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:999px;box-shadow:var(--shadow)}
@@ -132,45 +124,12 @@ body.admin .redit{outline:2px dashed color-mix(in srgb,var(--g2) 55%,transparent
 body.admin .lang .redit,body.admin .redit.inl{display:inline-block}
 body.admin .redit:focus{outline:2px solid var(--g2);background:var(--glow)}
 .redit:empty::before{content:attr(data-ph);color:var(--muted);opacity:.55;font-weight:400}
-.r-edu .when{align-self:start}
-.r-edu .when.redit{margin-top:2px}
 .tline{display:flex;gap:12px;align-items:baseline;margin-bottom:10px}
 .tline small{color:var(--muted);min-width:56px;flex:none}
 .tline .redit{flex:1;width:auto}
 .meta{display:flex;flex-wrap:wrap;gap:4px 14px}
 .meta small{color:var(--muted);font-size:.9rem}
-.abnote{font-size:.85rem;opacity:.9;max-width:340px;line-height:1.35}
-.phones{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
-.phones .ph1{display:inline-flex;align-items:center;gap:6px}
-.addmini{border:1px dashed var(--g2);background:transparent;color:var(--ink);border-radius:999px;padding:2px 12px;font:600 .8rem var(--font);cursor:pointer}
-.addmini:hover{background:var(--soft)}
-.rctl{display:inline-flex;gap:4px;flex:none}
-.redit.saving{opacity:.6}
-body.preview .admin-only:not(.adminbar){display:none!important}
-body.preview [data-edit]{outline:none!important}
-.tagbox{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.tag.chip-ed{display:inline-flex;align-items:center;gap:4px;padding-right:6px;cursor:pointer;user-select:none;transition:background .2s,border-color .2s,color .2s}
-.tag.chip-ed:hover{border-color:var(--g2)}
-.tag.chip-ed .tx[contenteditable=true]{user-select:text;cursor:text;outline:2px solid var(--g2);border-radius:6px;padding:0 4px;background:var(--glow)}
-.tag.chip-ed .x{border:0;background:transparent;color:inherit;opacity:.5;cursor:pointer;font-size:.95rem;line-height:1;padding:2px 5px;border-radius:50%}
-.tag.chip-ed .x:hover{opacity:1;background:color-mix(in srgb,var(--g2) 25%,transparent)}
-.tag-add{border:1px dashed var(--g2);background:transparent;color:var(--ink);border-radius:999px;padding:4px 14px;font:inherit;font-size:.88rem;width:120px;max-width:100%}
-.tag-add:focus{outline:none;box-shadow:0 0 0 3px var(--glow)}
-.tagbox.sm .tag{font-size:.8rem;padding:2px 8px 2px 11px}
-.ritem.flash{animation:flash 1.9s ease-out;border-radius:12px}
-@keyframes flash{0%,35%{box-shadow:0 0 0 3px var(--g2),0 0 26px var(--glow);background:var(--soft)}to{box-shadow:0 0 0 0 transparent}}
-#rdlg textarea{min-height:92px}
-.btn.sm{padding:9px 18px;font-size:.9rem;min-height:0}
-.plink{margin-top:14px;max-width:100%}
-.plink .ico{width:16px;height:16px;flex:none}
-.plink span{overflow:hidden;text-overflow:ellipsis}
-.linkfields{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);display:grid;gap:8px}
-.linkfields .lf-title{margin:0;font-weight:700;font-size:.85rem;color:var(--muted)}
-.linkfields label.lf{margin:0;gap:4px;font-size:.8rem;color:var(--muted)}
-.lfin{width:100%;padding:8px 12px!important;font-size:.9rem!important;border-radius:10px!important}
-.lfin.saving{opacity:.6}
-.linkfields .lf-hint{margin:0;font-size:.78rem;color:var(--muted);opacity:.85}
-.thint{color:var(--muted);font-size:.85rem;margin:14px 0 0}
+.abnote{font-size:.85rem;opacity:.85}
 .r-edu{list-style:none;margin:0;padding:0 0 0 26px;position:relative;display:grid;gap:26px}
 .r-edu::before{content:"";position:absolute;left:5px;top:8px;bottom:8px;width:2px;background:linear-gradient(var(--g2),var(--line))}
 .r-edu li{display:grid;grid-template-columns:140px 1fr;gap:4px 24px}
@@ -181,10 +140,9 @@ body.preview [data-edit]{outline:none!important}
 .r-edu .deg{margin:3px 0 0;font-size:.98rem}
 .r-edu .loc{margin:2px 0 0;color:var(--muted);font-size:.9rem}
 .r-skills{display:grid}
-.skl{display:grid;grid-template-columns:minmax(180px,250px) 1fr;gap:8px 24px;padding:16px 0;border-top:1px dashed var(--line)}
+.skl{display:grid;grid-template-columns:180px 1fr;gap:8px 24px;padding:16px 0;border-top:1px dashed var(--line)}
 .skl:first-child{border-top:0;padding-top:0}
-.skl-name{font-weight:600;color:var(--muted);padding-top:5px;flex-wrap:wrap}
-.skl-name .redit{min-width:8ch}
+.skl-name{font-weight:600;color:var(--muted);padding-top:5px}
 .tags{display:flex;flex-wrap:wrap;gap:8px}
 .tag{background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:4px 14px;font-weight:600;font-size:.88rem;line-height:1.5}
 .tag.learn{background:transparent;border-style:dashed;color:var(--muted);font-weight:500}
@@ -282,16 +240,48 @@ input[type=range]{accent-color:var(--g2)}
 .actions{display:flex;justify-content:flex-end;gap:10px;margin-top:6px}
 .err{color:#c0392b;font-size:.9rem;min-height:1.3em;margin:0 0 6px}
  
-.adminbar{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:25;display:flex;align-items:center;gap:12px;background:var(--g1);color:var(--bg);padding:8px 8px 8px 18px;border-radius:26px;flex-wrap:wrap;justify-content:center;box-shadow:0 14px 40px -12px rgba(0,0,0,.5);font-size:.92rem;font-weight:500;max-width:94vw}
-body.admin footer{padding-bottom:90px}
+.adminbar{position:static;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px;background:var(--g1);color:var(--bg);padding:8px 16px;font-size:.92rem;font-weight:500;pointer-events:auto}
+.adminbar.bottom{padding:12px 16px}
 .adminbar .pill{background:var(--bg);color:var(--ink);border:0;padding:8px 16px}
+.adminbar .pill:disabled{opacity:.6;cursor:wait}
 .toast{position:fixed;top:84px;left:50%;transform:translate(-50%,-20px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:500;opacity:0;pointer-events:none;transition:.3s;z-index:40}
 .toast.show{opacity:1;transform:translate(-50%,0)}
  
-.contact{text-align:center;padding-bottom:120px}
+.contact{text-align:center;padding-bottom:60px}
 .contact .lead{margin-inline:auto}
 footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;border-top:1px solid var(--line)}
  
+/* section visibility + clickability */
+.vhide{display:none!important}
+body.vis-pending [data-vkey]{visibility:hidden}
+.h2row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 10px}
+.h2row h2{margin:0}
+section.is-hidden .h2row h2{opacity:.5}
+button,a,.eye,.pill,.icon-btn,[data-edit],.redit,.adminbar{pointer-events:auto}
+body.admin .eye{display:grid}
+
+/* print-ready resume */
+@media print{
+  @page{margin:14mm}
+  html,html[data-theme=dark]{--bg:#fff;--card:#fff;--ink:#000;--muted:#333;--line:#bbb;--soft:#fff;--g1:#000;--g2:#14452f;--g3:#14452f;--glow:transparent;--shadow:none;--on-accent:#000}
+  body{background:#fff!important;color:#000;font-size:11pt;line-height:1.45;overflow:visible}
+  #progress,.blobs,.nav,.toast,.marquee,.hero,#about,#skills,#contact,footer,.adminbar,.ractions,.admin-only,.eye,.hbadge,.pill,.icon-btn,.login,dialog,.rsec.is-hidden,#resume>.wrap>h2,#resume>.wrap>.lead{display:none!important}
+  body.admin [data-edit],body.admin .redit{outline:none!important;background:none!important}
+  section{padding:0!important}
+  .wrap{width:100%}
+  .rhead{padding:0 0 12px}
+  .rsec{padding:14px 0;break-inside:avoid;border-bottom:1px solid #bbb}
+  .rsec-head{margin-bottom:10px}
+  .rsec-head h3{font-size:13pt;text-transform:uppercase;letter-spacing:.04em}
+  .rlinks .chip{border:0;padding:0;min-height:0;box-shadow:none;background:none;font-size:10pt}
+  .rlinks .chip .ico{display:none}
+  .proj,.ritem,.skl,.lang{break-inside:avoid;box-shadow:none}
+  .proj{border:1px solid #bbb}
+  .tag{background:none;border:1px solid #999}
+  .r-edu li::before{background:#fff!important;box-shadow:none!important}
+  *{animation:none!important;transition:none!important}
+  a{color:#000;text-decoration:none}
+}
 @media (max-width:900px){.tiers{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:720px){
   .r-edu li{grid-template-columns:1fr}
@@ -304,7 +294,7 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
   .sub{font-size:1.05rem}
   .bar-row{flex-direction:column;align-items:stretch;gap:10px}
   .tools{width:100%}.tools select{flex:1;min-width:0}
-  .adminbar{left:12px;right:12px;transform:none;border-radius:22px;flex-wrap:wrap;justify-content:space-between;padding:10px 10px 10px 16px;font-size:.85rem}
+  .adminbar{font-size:.85rem;padding:10px 12px}
   .toast{max-width:90vw;text-align:center;border-radius:18px}
 }
 @media (max-width:520px){
@@ -326,19 +316,20 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
 @media (hover:none){.card:hover,.tier:hover{transform:none}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition-duration:.01ms!important}h1 .ch{transform:none;opacity:1}}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
-<body>
+<body class="vis-pending">
+<div class="adminbar admin-only" role="toolbar" aria-label="Admin toolbar"><span>Admin mode · click any dashed text to edit, then Save · 👁️ / 🙈 shows or hides a section for the public</span><span class="abnote" id="abnote" hidden>Resume is showing default data. Import it to enable editing.</span><button class="pill" id="importresume" hidden>Import default resume data</button><button class="pill savetext">Save changes</button></div>
 <div id="progress"></div>
-<div class="blobs" aria-hidden="true"><i></i><i></i><i></i></div>
-<canvas id="gl" aria-hidden="true"></canvas>
+<div class="blobs" aria-hidden="true"><i></i><i></i></div>
 <div class="toast" id="toast" role="status"></div>
  
 <header class="nav">
   <div class="nav-in">
     <a class="logo" href="#top">Nirmit Nepal</a>
     <nav aria-label="Main"><ul>
-      <li><a class="l" href="#about">About</a></li>
-      <li><a class="l" href="#skills">Skills</a></li>
+      <li data-vkey="about"><a class="l" href="#about">About</a></li>
+      <li data-vkey="skills_section"><a class="l" href="#skills">Skills</a></li>
       <li><a class="l" href="#resume">Resume</a></li>
       <li><a class="l" href="#contact">Contact</a></li>
       <li><button class="login" id="login">Admin login</button></li>
@@ -354,7 +345,7 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
     <p class="sub" data-edit="hero_sub">I’m a student developer who likes turning ideas into clean, working software, and I keep honest scores on how far I’ve come.</p>
     <div class="cta"><a class="btn" href="#skills">See my skills</a><a class="btn ghost" href="#contact">Get in touch</a></div>
   </div>
-  <div class="marquee" aria-hidden="true"><div class="track" id="track"></div></div>
+  <div class="marquee" data-vkey="skills_section" aria-hidden="true"><div class="track" id="track"></div></div>
  
   <section id="about" class="about"><div class="wrap">
     <h2>About me</h2>
@@ -388,15 +379,20 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
     <header class="rhead">
       <div class="rtop">
         <div>
-          <h3 class="rname" id="hname"></h3>
-          <p class="rrole" id="hrole"></p>
+          <h3 class="rname">Nirmit Nepal</h3>
+          <p class="rrole" data-edit="resume_role">CSE Student | Aspiring Software Developer</p>
         </div>
         <div class="ractions">
-          <a class="btn" href="resume.pdf" download="Nirmit-Nepal-Resume.pdf"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download Resume</a>
-          <a class="btn ghost" href="resume.pdf" target="_blank" rel="noopener noreferrer">View</a>
+          <button class="btn" type="button" id="downloadresume"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Download Resume</span></button>
+          <button class="btn ghost" type="button" id="viewresume">View</button>
+          <button class="btn ghost" type="button" id="printresume">Print</button>
         </div>
       </div>
-      <ul class="rcontact" id="hcontact"></ul>
+      <ul class="rcontact">
+        <li><small>Email</small><a href="mailto:nirmitnepal1234@gmail.com">nirmitnepal1234@gmail.com</a></li>
+        <li><small>Phone</small><span><a href="tel:+919234179508">+91 9234179508</a> · <a href="tel:+9779803080969">+977 9803080969</a></span></li>
+        <li><small>Location</small><span data-edit="resume_location">Yelahanka, Bengaluru, Karnataka, India</span></li>
+      </ul>
       <div class="rlinks" id="rlinks"></div>
     </header>
 
@@ -414,9 +410,9 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
   </div></section>
 </main>
 <footer>© <span id="year"></span> Nirmit Nepal</footer>
+<div class="adminbar bottom admin-only" role="toolbar" aria-label="Admin save bar"><span>Done editing?</span><button class="pill savetext">Save changes</button></div>
  
-<div class="adminbar admin-only"><span>Admin mode · click dashed text to edit (resume changes save instantly)</span><span class="abnote" id="abnote" hidden></span><span class="abnote" id="pubnote" hidden></span><button class="pill" id="previewbtn">Preview as visitor</button><button class="pill" id="savetext">Save page text</button></div>
- 
+
 <dialog id="dlg">
   <form id="form">
     <h3 id="dlg-title">Add a skill</h3>
@@ -437,15 +433,6 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
   </form>
 </dialog>
  
-<dialog id="rdlg" aria-labelledby="rdlg-title">
-  <form id="rform" autocomplete="off">
-    <h3 id="rdlg-title">Add</h3>
-    <div id="rfields"></div>
-    <p class="err" id="rerr" role="alert"></p>
-    <div class="actions"><button type="button" class="pill" data-close>Cancel</button><button class="btn" id="rsave">Add</button></div>
-  </form>
-</dialog>
-
 <dialog id="ldlg">
   <form id="lform">
     <h3>Admin login</h3>
@@ -581,18 +568,24 @@ document.querySelectorAll("[data-edit]").forEach(el=>el.addEventListener("paste"
   if(!isAdmin) return; e.preventDefault();
   document.execCommand("insertText",false,e.clipboardData.getData("text/plain"));
 }));
-$("savetext").onclick=async()=>{
+async function saveAll(){
   if(!sb||!isAdmin) return;
-  const btn=$("savetext"); btn.disabled=true;
+  const btns=document.querySelectorAll(".savetext"); btns.forEach(b=>b.disabled=true);
   const rows=[...document.querySelectorAll("[data-edit]")].map(el=>({key:el.dataset.edit,value:el.textContent.trim()}));
-  const {error}=await sb.from("site_content").upsert(rows);
-  btn.disabled=false;
-  if(error){alert(error.message);return}
-  toast("Page text saved");
-};
-
-
-
+  const t=await sb.from("site_content").upsert(rows);
+  let failed=t.error?t.error.message:"";
+  for(const id of Object.keys(dirty)){
+    const patch=dirty[id];
+    const r=await sb.from("resume_data").update(patch).eq("id",isNaN(+id)?id:+id);
+    if(r.error){failed=r.error.message;continue}
+    const row=rrows.find(x=>String(x.id)===id); if(row) Object.assign(row,patch);
+    delete dirty[id];
+  }
+  btns.forEach(b=>b.disabled=false);
+  toast(failed?"Couldn’t save: "+failed:"Changes saved");
+}
+document.querySelectorAll(".savetext").forEach(b=>b.onclick=saveAll);
+$("printresume").onclick=()=>window.print();
  
 /* ====== Auth ====== */
 function setAdmin(on){
@@ -600,10 +593,8 @@ function setAdmin(on){
   $("login").textContent=on?"Log out":"Admin login";
   document.querySelectorAll("[data-edit]").forEach(el=>el.contentEditable=on?"true":"false");
   if(skills.length) view();
-  try{
-    if(!on&&preview){preview=false;document.body.classList.remove("preview");$("previewbtn").textContent="Preview as visitor"}
-    renderResume(); if(on){ if(tableEmpty) seedDefaults(); verifyPublic(); }
-  }catch(e){}
+  try{ if(rrows.length) renderResume(); }catch(e){}
+  try{ applyTopVis(); }catch(e){}
 }
 const ldlg=$("ldlg"), lform=$("lform");
 $("login").onclick=async()=>{
@@ -743,435 +734,353 @@ RLINKS.forEach(l=>{
   const a=document.createElement("a"); a.className="chip sm"; a.href=l.url; a.target="_blank"; a.rel="noopener noreferrer";
   a.innerHTML=svgIcon(l.icon); const t=document.createElement("span"); t.textContent=l.label; a.append(t); $("rlinks").append(a);
 });
-/* Table shape: resume_data(category text unique, content jsonb, is_visible boolean). One row per section.
-   Every change is saved with upsert(..., {onConflict:"category"}) and only applied locally after Supabase confirms. */
-const RT="resume_data";
 const RCATS=[
-  {key:"education",title:"Education",add:"+ Add Education",noun:"education",f:[["title","Institution","e.g. B.M.S. Institute of Technology and Management",1],["subtitle","Degree / programme","e.g. B.E. / B.Tech in CSE"],["period","Timeline / years","e.g. 2026 – 2030"],["location","Location","City, country"]]},
-  {key:"skills",title:"Technical skills",add:"+ Add Skill Group",noun:"skill group",f:[["title","Group name","e.g. Databases",1],["tags","Skills (comma-separated)","e.g. MySQL, PostgreSQL"],["learning","Still learning (comma-separated, shown dimmed)","e.g. MongoDB"]]},
-  {key:"projects",title:"Projects",add:"+ Add Project",noun:"project",f:[["title","Title","e.g. Weather app",1],["tags","Tech stack (comma-separated)","e.g. Python, Flask, SQLite"],["details","Details / description","What it does and what you built",0,1],["link_text","Link button text","e.g. View in Figma, Live Demo, GitHub"],["link_url","Link target URL","https://…"]]},
-  {key:"languages_spoken",title:"Languages spoken",add:"+ Add Language",noun:"language",f:[["title","Language","e.g. Spanish",1],["subtitle","Level","e.g. Beginner, Fluent, Native"]]},
-  {key:"certifications",title:"Certifications & online courses",add:"+ Add Item",noun:"certification",f:[["title","Certification / course","e.g. CS50x",1],["subtitle","Issuer / platform","e.g. Harvard / edX"],["period","Date","e.g. Aug 2026"],["details","Notes","Anything worth mentioning",0,1]]},
-  {key:"extracurriculars",title:"Extracurriculars, achievements & community",add:"+ Add Item",noun:"activity",f:[["title","Group (e.g. Clubs & Societies)","e.g. Coding club",1],["details","Details","Role, achievement or event",0,1]]}
+  {key:"education",title:"Education",f:{title:"Institution",subtitle:"Degree / programme",period:"Years / grades",location:"Location"}},
+  {key:"skill",title:"Technical skills",f:{title:"Group name",tags:"Skills (comma-separated)",learning:"Still learning (comma-separated, shown dashed)"}},
+  {key:"project",title:"Projects",f:{title:"Project name",tags:"Tech stack (comma-separated)",details:"Details"}},
+  {key:"language",title:"Languages spoken",f:{title:"Language",subtitle:"Level"}},
+  {key:"certification",title:"Certifications & online courses",f:{title:"Certification / course",subtitle:"Issuer / platform",period:"Date",details:"Notes"}},
+  {key:"extracurricular",title:"Extracurriculars, achievements & community",f:{title:"Group (e.g. Clubs & Societies)",details:"Details"}}
 ];
-const KEYS=RCATS.map(c=>c.key);
-const DEFAULTS={
-  header:{name:"Nirmit Nepal",role:"CSE Student | Aspiring Software Developer",email:"nirmitnepal1234@gmail.com",phones:["+91 9234179508","+977 9803080969"],location:"Yelahanka, Bengaluru, Karnataka, India"},
-  education:[
-    {title:"B.M.S. Institute of Technology and Management (BMSIT&M), VTU",subtitle:"B.E. / B.Tech in CSE · 1st semester",period:"2026 – 2030",location:"Bengaluru, Karnataka, India"},
-    {title:"Himalayan Whitehouse International College",subtitle:"+2 Science · NEB High School Diploma",period:"2025",location:"Kathmandu, Nepal"},
-    {title:"DAV Sushil Kedia Vishwa Bharati Higher Secondary School",subtitle:"Secondary Education",period:"Grades 7 – 10",location:"Kathmandu, Nepal"},
-    {title:"Aksharaa School",subtitle:"Middle School",period:"Grades 1 – 6",location:"Kathmandu, Nepal"}],
-  skills:[
-    {title:"Languages",tags:"Python, C, C++, JavaScript, HTML, CSS",learning:"Java, SQL"},
-    {title:"Web & Frameworks",tags:"Supabase",learning:"React, Node.js, Express, Tailwind CSS, REST APIs"},
-    {title:"Developer Tools",tags:"Git, GitHub, VS Code, Vercel"},
-    {title:"Core Competencies",tags:"Problem-Solving, Object-Oriented Design, Basic Database Management, Web Accessibility"}],
-  projects:[
-    {title:"Personal Portfolio Website",tags:"HTML5, CSS3, JavaScript, Supabase, Vercel",details:"Built and deployed a responsive personal portfolio with dark mode, dynamic admin-managed contact options, and Supabase integration."},
-    {title:"CLI / Console Applications",tags:"Python, C++",details:"--"},
-    {title:"Automation Scripts",tags:"Python",details:"--"},
-    {title:"Web Applications",tags:"JavaScript, Supabase",details:"--"}],
-  languages_spoken:[{title:"Nepali",subtitle:"Native"},{title:"Hindi",subtitle:"Fluent"},{title:"English",subtitle:"Professional / Fluent"}],
-  certifications:[{title:"--"}],
-  extracurriculars:[{title:"Coding Platforms",details:"--"},{title:"Clubs & Societies",details:"--"},{title:"Competitions & Events",details:"--"}]
-};
-
-/* ---- state (always rebuilt from the database on load) ---- */
-let R={}, hidden={}, readErr="", preview=false, flashId=null, pending=0, tableEmpty=false;
-const adm=()=>isAdmin&&!preview;
-const canEdit=()=>!!(adm()&&sb);
-const clone=o=>JSON.parse(JSON.stringify(o));
-const uid=()=>Math.random().toString(36).slice(2,10);
-
-/* ---- normalising whatever is stored (accepts older / differently named fields) ---- */
-const AL={title:["title","institution","name","school","project","language","course","group"],subtitle:["subtitle","degree","program","programme","level","issuer","platform"],period:["period","years","timeline","date","year"],location:["location"],tags:["tags","tech_stack","techStack","stack","technologies","skills","items"],learning:["learning"],details:["details","description","desc","notes"],link_text:["link_text","linkText","button_text","buttonText"],link_url:["link_url","linkUrl","url","link","href"]};
-const pick=(o,names)=>{for(const n of names){const v=o[n];if(v!=null&&v!=="") return Array.isArray(v)?v.join(", "):String(v)}return ""};
-function normItem(cat,x){
-  if(typeof x==="string"){
-    const m=cat.key==="languages_spoken"&&x.match(/^(.*?)\s*\((.*)\)\s*$/);   // "Nepali (Native)" -> language + level
-    x=m?{title:m[1],subtitle:m[2]}:{title:x};
-  }
-  if(!x||typeof x!=="object") x={};
-  const fs=cat.f.map(z=>z[0]); if(fs.includes("tags")&&!fs.includes("learning")) fs.push("learning");   // dimmed tags are kept for projects too
-  const o={id:x.id||uid()}; fs.forEach(f=>{o[f]=pick(x,AL[f]||[f])}); return o;
-}
-function normCat(key,c){
-  if(typeof c==="string"){try{c=JSON.parse(c)}catch(e){}}
-  if(key==="header"){
-    c=(c&&typeof c==="object"&&!Array.isArray(c))?c:{};
-    const d=DEFAULTS.header, ph=Array.isArray(c.phones)?c.phones:(c.phones||c.phone?String(c.phones||c.phone).split(/\s*[\/,|]\s*/):d.phones);
-    return {name:c.name||d.name,role:c.role||c.title||d.role,email:c.email||d.email,phones:ph.map(String).filter(Boolean),location:c.location||d.location};
-  }
-  const cat=RCATS.find(k=>k.key===key);
-  return Array.isArray(c)?c.map(x=>normItem(cat,x)):clone(DEFAULTS[key]).map(x=>normItem(cat,x));
-}
-
-/* ---- tiny DOM helpers ---- */
+const DEFAULT_RESUME=[
+  {category:"education",title:"B.M.S. Institute of Technology and Management (BMSIT&M), VTU",subtitle:"B.E. / B.Tech in CSE · 1st semester",period:"2026 – 2030",location:"Bengaluru, Karnataka, India"},
+  {category:"education",title:"Himalayan Whitehouse International College",subtitle:"+2 Science · NEB High School Diploma",period:"2025",location:"Kathmandu, Nepal"},
+  {category:"education",title:"DAV Sushil Kedia Vishwa Bharati Higher Secondary School",subtitle:"Secondary Education",period:"Grades 7 – 10",location:"Kathmandu, Nepal"},
+  {category:"education",title:"Aksharaa School",subtitle:"Middle School",period:"Grades 1 – 6",location:"Kathmandu, Nepal"},
+  {category:"skill",title:"Languages",tags:"Python, C, C++, JavaScript, HTML, CSS",learning:"Java, SQL"},
+  {category:"skill",title:"Web & Frameworks",tags:"Supabase",learning:"React, Node.js, Express, Tailwind CSS, REST APIs"},
+  {category:"skill",title:"Developer Tools",tags:"Git, GitHub, VS Code, Vercel"},
+  {category:"skill",title:"Core Competencies",tags:"Problem-Solving, Object-Oriented Design, Basic Database Management, Web Accessibility"},
+  {category:"project",title:"Personal Portfolio Website",tags:"HTML5, CSS3, JavaScript, Supabase, Vercel",details:"Built and deployed a responsive personal portfolio with dark mode, dynamic admin-managed contact options, and Supabase integration."},
+  {category:"project",title:"CLI / Console Applications",tags:"Python / C++",details:"--"},
+  {category:"project",title:"Automation Scripts",tags:"Python",details:"--"},
+  {category:"project",title:"Web Applications",tags:"JavaScript / Supabase",details:"--"},
+  {category:"language",title:"Nepali",subtitle:"Native"},
+  {category:"language",title:"Hindi",subtitle:"Fluent"},
+  {category:"language",title:"English",subtitle:"Professional / Fluent"},
+  {category:"certification",title:"--"},
+  {category:"extracurricular",title:"Coding Platforms",details:"--"},
+  {category:"extracurricular",title:"Clubs & Societies",details:"--"},
+  {category:"extracurricular",title:"Competitions & Events",details:"--"}
+];
+let rrows=[], rFallback=false, vis={}, dirty={};
+/* visibility rule: public sees a section only if it is not hidden; admin ALWAYS sees every section */
+const sectionHidden=k=>!!(vis[k]&&vis[k].hidden);
+const showSection=k=>isAdmin||!sectionHidden(k);
 function setTxt(e,t){e.textContent=t; if((t||"").trim()==="--") e.classList.add("ph")}
 function mk(tag,cls,txt){const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) setTxt(e,txt); return e}
 const put=(p,...c)=>{c.forEach(x=>{if(x) p.append(x)});return p};
 const csv=v=>(v||"").split(",").map(x=>x.trim()).filter(Boolean);
-const ri=(tag,cls,item)=>{const e=mk(tag,cls);e.dataset.id=item.id;return e};
-function selectAll(el){const r=document.createRange();r.selectNodeContents(el);const g=getSelection();g.removeAllRanges();g.addRange(r)}
-addEventListener("beforeunload",e=>{if(pending){e.preventDefault();e.returnValue=""}});
-function fail(msg){
-  alert(msg+(/is_visible/.test(msg)?"\n\nAdd the column in Supabase:\nalter table resume_data add column if not exists is_visible boolean default true;":""));
-}
+const canEdit=()=>!!(isAdmin&&!rFallback&&sb);
+const val=(row,f)=>dirty[row.id]&&f in dirty[row.id]?dirty[row.id][f]:(row[f]||"");
 
-/* ---- database ---- */
-async function dbw(q){
-  const {data,error}=await q;
-  if(error) return {error:error.message};
-  if(!data||!data.length) return {error:"The database refused the change (blocked by permissions / RLS)."};
-  return {data};
-}
-/* Save one section: the change is applied to a COPY, upserted, and only after Supabase confirms does it become the local state.
-   Saves of the same section run one after another so they can never overwrite each other. */
-const chain={};
-function saveSection(key,mutate,hide){
-  const run=async()=>{
-    pending++;
-    try{
-      const next=clone(R[key]); mutate(next);
-      const hv=hide===undefined?!!hidden[key]:hide;
-      const res=await dbw(sb.from(RT).upsert({category:key,content:next,is_visible:!hv},{onConflict:"category"}).select());
-      if(res.error) return {error:res.error};
-      R[key]=next; if(hv) hidden[key]=true; else delete hidden[key];
-      return {ok:true};
-    }catch(e){return {error:e.message||String(e)}}
-    finally{pending--}
-  };
-  const p=(chain[key]||Promise.resolve()).then(run,run); chain[key]=p; return p;
-}
-function setField(next,key,obj,f,v){
-  if(key==="header"){ if(Array.isArray(obj)) next.phones[f]=v; else next[f]=v; return }
-  const it=next.find(x=>x.id===obj.id); if(it) it[f]=v;
-}
-
-/* ---- inline-editable text: saved to Supabase when you leave the field ---- */
-function ed(tag,cls,key,obj,f,ph,onSaved){
-  const v=obj[f]||"";
+/* an editable text element: dashed + contenteditable for the admin, plain text (or nothing if empty) for visitors */
+function ed(tag,cls,row,f,ph){
+  const v=val(row,f);
   if(!canEdit()){ if(!v) return null; return mk(tag,cls,v) }
   const e=mk(tag,cls,v); e.classList.add("redit"); e.contentEditable="true"; e.spellcheck=false; e.dataset.ph=ph;
-  let saved=v;
-  e.addEventListener("input",()=>e.classList.toggle("ph",e.textContent.trim()==="--"));
+  e.addEventListener("input",()=>{
+    const t=e.textContent.trim();
+    (dirty[row.id]=dirty[row.id]||{})[f]=t; e.classList.toggle("ph",t==="--");
+  });
   e.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();e.blur()}});
   e.addEventListener("paste",ev=>{ev.preventDefault();document.execCommand("insertText",false,(ev.clipboardData.getData("text/plain")||"").replace(/\s*\n\s*/g," "))});
-  e.addEventListener("blur",async()=>{
-    const nv=e.textContent.trim(); if(nv===saved) return;
-    e.classList.add("saving");
-    const res=await saveSection(key,next=>setField(next,key,obj,f,nv));
-    e.classList.remove("saving");
-    if(res.error){fail(res.error);e.textContent=saved;e.classList.toggle("ph",saved==="--");return}
-    saved=nv; toast("Saved"); if(onSaved) onSaved();
-  });
   return e;
 }
-function iconBtn(txt,label,fn){const b=mk("button","icon-btn sm admin-only",txt);b.type="button";b.title=label;b.setAttribute("aria-label",label);b.onclick=fn;return b}
-function ctl(key,item,onlyDelete){
+function delBtn(row){
   if(!canEdit()) return null;
-  const c=mk("span","rctl");
-  if(!onlyDelete) c.append(iconBtn("✎","Edit",()=>openForm(key,item)));
-  c.append(iconBtn("🗑️","Delete",()=>removeItem(key,item)));
-  return c;
+  const b=mk("button","icon-btn sm admin-only","✕"); b.type="button"; b.setAttribute("aria-label","Delete item");
+  b.onclick=()=>removeRow(row); return b;
 }
 const chips=(csvStr,cls)=>csv(csvStr).map(x=>mk("span",cls||"tag",x));
 
-/* chip editor for Technical skills + Projects: click = dim / undim, double-click = rename, × = remove, input = add */
-function tagBox(key,item,cls){
-  const box=mk("div","tagbox"+(cls?" "+cls:""));
-  const read=o=>[...csv(o.tags).map(t=>({t,learn:false})),...csv(o.learning).map(t=>({t,learn:true}))];
-  let it=read(item);
-  const commit=async()=>{
-    it.sort((a,b)=>a.learn-b.learn);
-    const tags=it.filter(x=>!x.learn).map(x=>x.t).join(", "), learning=it.filter(x=>x.learn).map(x=>x.t).join(", ");
-    const res=await saveSection(key,next=>{const t=next.find(x=>x.id===item.id);if(t){t.tags=tags;t.learning=learning}});
-    if(res.error){fail(res.error);const cur=R[key].find(x=>x.id===item.id)||item;it=read(cur);paint();return}
-    toast("Saved");
-  };
-  const paint=focusAdd=>{
-    box.innerHTML="";
-    it.forEach(item2=>{
-      const c=mk("span","tag chip-ed"+(item2.learn?" learn":"")), tx=mk("span","tx",item2.t);
-      tx.title="Click: dim / undim · double-click: rename";
-      tx.onclick=()=>{clearTimeout(tx.t);tx.t=setTimeout(()=>{item2.learn=!item2.learn;paint();commit()},220)};
-      tx.ondblclick=()=>{
-        clearTimeout(tx.t); tx.contentEditable="true"; tx.focus(); selectAll(tx);
-        const done=ok=>{
-          tx.onblur=null; tx.contentEditable="false";
-          const v=tx.textContent.replace(/,/g," ").trim();
-          if(ok&&v!==item2.t){ if(v) item2.t=v; else it.splice(it.indexOf(item2),1); paint(); commit(); return }
-          paint();
-        };
-        tx.onblur=()=>done(true);
-        tx.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();done(true)}else if(e.key==="Escape"){e.preventDefault();done(false)}};
-      };
-      const x=mk("button","x","×"); x.type="button"; x.title="Remove";
-      x.onclick=()=>{it.splice(it.indexOf(item2),1);paint();commit()};
-      c.append(tx,x); box.append(c);
-    });
-    const inp=document.createElement("input"); inp.className="tag-add"; inp.placeholder="+ add"; inp.maxLength=40; inp.setAttribute("aria-label","Add a tag");
-    const add=()=>{
-      const parts=inp.value.split(",").map(v=>v.trim()).filter(Boolean); inp.value="";
-      if(!parts.length) return false;
-      parts.forEach(t=>it.push({t,learn:false})); return true;
-    };
-    inp.onkeydown=e=>{if(e.key==="Enter"||e.key===","){e.preventDefault();if(add()){paint(true);commit()}}};
-    inp.onblur=()=>{if(add()){paint();commit()}};
-    box.append(inp); if(focusAdd) inp.focus();
-  };
-  paint(); return box;
-}
-
-/* plain input for the project link label / URL: saved with upsert (saveSection) when you leave the field */
-function linkInput(key,obj,f,ph,max,onSaved){
-  const i=document.createElement("input");
-  i.type="text"; i.className="lfin"; i.placeholder=ph; i.maxLength=max; i.value=obj[f]||""; i.spellcheck=false; i.autocomplete="off";
-  i.setAttribute("aria-label",f==="link_url"?"Project link URL":"Project link label");
-  if(f==="link_url") i.inputMode="url";
-  let saved=i.value;
-  i.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();i.blur()}});
-  i.addEventListener("blur",async()=>{
-    let nv=i.value.trim(); if(f==="link_url"&&nv) nv=safeUrl(nv);
-    i.value=nv; if(nv===saved) return;
-    i.classList.add("saving");
-    const res=await saveSection(key,next=>setField(next,key,obj,f,nv));
-    i.classList.remove("saving");
-    if(res.error){fail(res.error);i.value=saved;return}
-    saved=nv; toast("Saved"); if(onSaved) onSaved();
-  });
-  return i;
-}
-/* project link button: shows the exact text typed; hidden when there is no URL */
-function linkBtn(r){
-  const url=(r.link_url||"").trim(); if(!url) return null;
-  const a=document.createElement("a");
-  a.className="btn ghost sm plink"; a.href=safeUrl(url); a.target="_blank"; a.rel="noopener noreferrer";
-  a.innerHTML=svgIcon("link"); const t=document.createElement("span"); t.textContent=(r.link_text||"").trim()||"View project"; a.append(t);
-  return a;
-}
-
-/* ---- section builders ---- */
 const BUILD={
-  education:(items,K)=>{const ol=mk("ol","r-edu");items.forEach(r=>{
-    const li=ri("li","ritem",r);
-    li.append(ed("div","when",K,r,"period","Years")||mk("div","when",""));
-    const d=mk("div"); d.append(put(mk("div","hrow"),ed("h4",null,K,r,"title","Institution"),ctl(K,r)));
-    put(d,ed("p","deg",K,r,"subtitle","Degree / programme"),ed("p","loc",K,r,"location","Location"));
+  education:rows=>{const ol=mk("ol","r-edu");rows.forEach(r=>{
+    const li=mk("li","ritem");
+    li.append(ed("div","when",r,"period","Years / grades")||mk("div","when",""));
+    const d=mk("div"); d.append(put(mk("div","hrow"),ed("h4",null,r,"title","Institution"),delBtn(r)));
+    put(d,ed("p","deg",r,"subtitle","Degree / programme"),ed("p","loc",r,"location","Location"));
     li.append(d); ol.append(li)});return ol},
-  skills:(items,K)=>{const w=mk("div","r-skills");let any=false;items.forEach(r=>{
-    const row=ri("div","skl ritem",r);
-    row.append(put(mk("div","skl-name hrow"),ed("span",null,K,r,"title","Group name"),ctl(K,r)));
+  skill:rows=>{const w=mk("div","r-skills");let any=false;rows.forEach(r=>{
+    const row=mk("div","skl ritem");
+    row.append(put(mk("div","skl-name hrow"),ed("span",null,r,"title","Group name"),delBtn(r)));
     const box=mk("div");
-    if(canEdit()) box.append(tagBox(K,r));
-    else{
-      const t=mk("div","tags"); chips(r.tags).forEach(c=>t.append(c));
-      chips(r.learning,"tag learn").forEach(c=>{c.title="Currently learning";t.append(c);any=true}); box.append(t);
+    if(canEdit()){
+      [["Skills","tags","comma-separated skills"],["Learning","learning","still learning (shown dashed)"]].forEach(([lab,f,ph])=>{
+        const l=mk("div","tline"); l.append(mk("small",null,lab)); l.append(ed("div",null,r,f,ph)); box.append(l)});
+    }else{
+      const t=mk("div","tags"); chips(val(r,"tags")).forEach(c=>t.append(c));
+      chips(val(r,"learning"),"tag learn").forEach(c=>{c.title="Currently learning";t.append(c);any=true}); box.append(t);
     }
     row.append(box); w.append(row)});
     if(any) w.append(mk("p","note","Dashed tags are things I’m still learning.")); return w},
-  projects:(items,K)=>{const g=mk("div","r-proj");items.forEach(r=>{
-    const c=ri("article","proj ritem",r);
-    c.append(put(mk("div","hrow"),ed("h4",null,K,r,"title","Project title"),ctl(K,r)));
-    if(canEdit()) c.append(tagBox(K,r,"sm"));
-    else{const tg=[...chips(r.tags),...chips(r.learning,"tag learn")];if(tg.length) c.append(put(mk("div","tags sm"),...tg))}
-    put(c,ed("p","det",K,r,"details","Details / description"));
-    const lb=linkBtn(r); if(lb) c.append(lb);
-    if(canEdit()){
-      const lf=mk("div","linkfields");
-      lf.append(mk("p","lf-title","Link button"));
-      const refresh=()=>{                           // keep the live button in sync after a link field is saved
-        const old=c.querySelector("a.plink"); if(old) old.remove();
-        const nb=linkBtn(R[K].find(x=>x.id===r.id)||r); if(nb) c.insertBefore(nb,lf);
-      };
-      [["Button label","link_text","e.g. View in Figma, GitHub Repo, Live Demo",60],["Button URL","link_url","https://…",300]].forEach(([lab,f,ph,max])=>{
-        const l=mk("label","lf"); l.append(mk("span",null,lab)); l.append(linkInput(K,r,f,ph,max,refresh)); lf.append(l)});
-      lf.append(mk("p","lf-hint","Leave the URL empty to hide the button. Saves automatically."));
-      c.append(lf);
-    }
+  project:rows=>{const g=mk("div","r-proj");rows.forEach(r=>{
+    const c=mk("article","proj ritem");
+    c.append(put(mk("div","hrow"),ed("h4",null,r,"title","Project name"),delBtn(r)));
+    if(canEdit()) c.append(ed("div","tl",r,"tags","tech stack, comma-separated"));
+    else{const tg=chips(val(r,"tags"));if(tg.length) c.append(put(mk("div","tags sm"),...tg))}
+    put(c,ed("p","det",r,"details","Details"));
     g.append(c)});return g},
-  languages_spoken:(items,K)=>{const g=mk("div","r-lang");items.forEach(r=>{
-    g.append(put(ri("div","lang ritem",r),ed("b",null,K,r,"title","Language"),ed("span",null,K,r,"subtitle","Level"),ctl(K,r,true)))});return g},
-  certifications:(items,K)=>{const ul=mk("ul","r-cert");items.forEach(r=>{
-    const li=ri("li","ritem",r);
-    li.append(put(mk("div","hrow"),ed("b",null,K,r,"title","Certification / course"),ctl(K,r)));
-    const m=put(mk("div","meta"),ed("small",null,K,r,"subtitle","Issuer / platform"),ed("small",null,K,r,"period","Date"));
+  language:rows=>{const g=mk("div","r-lang");rows.forEach(r=>{
+    g.append(put(mk("div","lang ritem"),ed("b",null,r,"title","Language"),ed("span",null,r,"subtitle","Level"),delBtn(r)))});return g},
+  certification:rows=>{const ul=mk("ul","r-cert");rows.forEach(r=>{
+    const li=mk("li","ritem");
+    li.append(put(mk("div","hrow"),ed("b",null,r,"title","Certification / course"),delBtn(r)));
+    const m=put(mk("div","meta"),ed("small",null,r,"subtitle","Issuer / platform"),ed("small",null,r,"period","Date"));
     if(m.children.length) li.append(m);
-    put(li,ed("p",null,K,r,"details","Notes")); ul.append(li)});return ul},
-  extracurriculars:(items,K)=>{const g=mk("div","r-xc");items.forEach(r=>{
-    const x=ri("div","xc ritem",r);
-    x.append(put(mk("div","hrow"),ed("h4",null,K,r,"title","Group (e.g. Clubs & Societies)"),ctl(K,r)));
-    put(x,ed("p",null,K,r,"details","Details")); g.append(x)});return g}
+    put(li,ed("p",null,r,"details","Notes")); ul.append(li)});return ul},
+  extracurricular:rows=>{const g=mk("div","r-xc");rows.forEach(r=>{
+    const x=mk("div","xc ritem");
+    x.append(put(mk("div","hrow"),ed("h4",null,r,"title","Group (e.g. Clubs & Societies)"),delBtn(r)));
+    put(x,ed("p",null,r,"details","Details")); g.append(x)});return g}
 };
 
-/* ---- header & contact info (category "header") ---- */
-function renderHeader(){
-  const h=R.header, K="header";
-  const name=$("hname"), role=$("hrole"), ul=$("hcontact");
-  name.innerHTML=""; role.innerHTML=""; ul.innerHTML="";
-  put(name,ed("span",null,K,h,"name","Your name")); put(role,ed("span",null,K,h,"role","Title / tagline"));
-  const li=(label,...nodes)=>{const l=document.createElement("li");l.append(mk("small",null,label));put(l,...nodes);ul.append(l)};
-  let em=null;
-  if(canEdit()) em=ed("div",null,K,h,"email","email address");
-  else if(h.email){em=document.createElement("a");em.href="mailto:"+h.email;em.textContent=h.email}
-  li("Email",em);
-  const ph=mk("div","phones");
-  h.phones.forEach((n,i)=>{
-    if(canEdit()){
-      const w=mk("span","ph1"); w.append(ed("span",null,K,h.phones,i,"phone"));
-      w.append(iconBtn("🗑️","Remove phone number",async()=>{
-        const res=await saveSection(K,next=>{next.phones.splice(i,1)});
-        if(res.error){fail(res.error);return}
-        renderHeader(); toast("Phone removed");
-      }));
-      ph.append(w);
-    }else if(n){const a=document.createElement("a");a.href="tel:"+n.replace(/[^\d+]/g,"");a.textContent=n;ph.append(a)}
-  });
-  if(canEdit()){const b=mk("button","addmini admin-only","+ phone");b.type="button";b.onclick=async()=>{
-    const res=await saveSection(K,next=>{next.phones.push("")});
-    if(res.error){fail(res.error);return}
-    renderHeader(); const els=$("hcontact").querySelectorAll(".ph1 .redit"); if(els.length) els[els.length-1].focus();
-  };ph.append(b)}
-  li("Phone",ph);
-  li("Location",ed("span",null,K,h,"location","City, region, country"));
-}
-
-/* ---- the whole resume ---- */
 function renderResume(){
-  if(!R.header) return;
-  renderHeader();
   const box=$("rbody"); box.innerHTML="";
   RCATS.forEach(cat=>{
-    const isHidden=!!hidden[cat.key];
-    if(isHidden&&!adm()) return;                       // visitors never see hidden (is_visible = false) sections
-    const items=R[cat.key];
-    const sec=mk("div","rsec"+(items.length?"":" empty")+(isHidden?" is-hidden":""));
+    const hidden=sectionHidden(cat.key);
+    if(!showSection(cat.key)) return;                 // public: skipped entirely. Admin: always rendered
+    const rows=rrows.filter(r=>r.category===cat.key);
+    const sec=mk("div","rsec"+(rows.length?"":" empty")+(hidden?" is-hidden":""));
     if(cat.key==="education") sec.id="education-list";
     const head=mk("div","rsec-head"), left=mk("div","rsec-title");
     left.append(mk("h3",null,cat.title));
-    const eye=mk("button","eye admin-only",isHidden?"🙈":"👁️"); eye.type="button";
-    eye.title=isHidden?"Hidden from visitors. Click to show":"Visible to visitors. Click to hide";
+    const eye=mk("button","eye admin-only",hidden?"🙈":"👁️"); eye.type="button";
+    eye.title=hidden?"Hidden from public. Click to show":"Visible to everyone. Click to hide";
     eye.setAttribute("aria-label",eye.title); eye.onclick=()=>toggleSection(cat.key);
     left.append(eye);
-    if(isHidden) left.append(mk("span","hbadge admin-only","Hidden from public"));
+    if(hidden) left.append(mk("span","hbadge admin-only","Hidden from public"));
     head.append(left);
-    if(canEdit()){const add=mk("button","pill admin-only",cat.add);add.type="button";add.onclick=()=>openForm(cat.key);head.append(add)}
+    if(canEdit()){const add=mk("button","pill admin-only","+ Add");add.type="button";add.onclick=()=>addItem(cat.key);head.append(add)}
     sec.append(head);
     const body=mk("div","rsec-body");
-    body.append(items.length?BUILD[cat.key](items,cat.key):mk("p","note","Nothing here yet."+(canEdit()?" Use the Add button above to create the first entry.":"")));
-    if(canEdit()&&(cat.key==="skills"||cat.key==="projects")) body.append(mk("p","thint","Click a chip to dim / undim it · double-click to rename · × to remove · type in “+ add” to add more."));
+    body.append(rows.length?BUILD[cat.key](rows):mk("p","note","Nothing here yet."+(canEdit()?" Use + Add to create the first entry.":"")));
     sec.append(body); box.append(sec);
   });
-  $("abnote").hidden=!readErr; $("abnote").textContent=readErr;
-  if(flashId){
-    const el=box.querySelector(`.ritem[data-id="${flashId}"]`);
-    if(el){el.scrollIntoView({block:"center",behavior:"smooth"});el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),2000)}
-    flashId=null;
-  }
+  const imp=!!(rFallback&&sb);
+  $("importresume").hidden=!imp; $("abnote").hidden=!imp;
+  applyTopVis(); document.body.classList.remove("vis-pending");
 }
-
-/* ---- load fresh data from Supabase on every page load ---- */
-async function loadResume(){
-  R={}; hidden={}; readErr=""; tableEmpty=false;
-  R.header=normCat("header",null); KEYS.forEach(k=>{R[k]=normCat(k,null)});      // fallback only until the database answers
-  if(sb){
-    const {data,error}=await sb.from(RT).select("*");
-    if(error){console.error(error);readErr="Couldn’t read resume_data: "+error.message}
-    else{
-      tableEmpty=!data.length;
-      data.forEach(r=>{
-        if(r.category!=="header"&&!KEYS.includes(r.category)) return;
-        R[r.category]=normCat(r.category,r.content);
-        if(r.is_visible===false) hidden[r.category]=true;
-      });
-    }
+async function loadResume() {
+  if (!sb) {
+    vis = {};
+    rrows = DEFAULT_RESUME;
+    rFallback = true;
+    renderResume();
+    return;
   }
+
+  const { data, error } = await sb
+    .from("resume_data")
+    .select("*")
+    .order("sort_order")
+    .order("created_at");
+
+  if (error) {
+    console.error("Resume loading failed:", error);
+    toast("Couldn't load resume settings.");
+    document.body.classList.remove("vis-pending");
+    return;
+  }
+
+  const all = data || [];
+
+  const savedVisibility = all.filter(
+    row => row.category === "section_visibility"
+  );
+
+  console.log("Visibility records loaded:", savedVisibility);
+
+  vis = {};
+
+  savedVisibility.forEach(row => {
+    vis[row.title] = {
+      id: row.id,
+      hidden: row.subtitle === "hidden"
+    };
+  });
+
+  const content = all.filter(
+    row => row.category !== "section_visibility"
+  );
+
+  if (!content.length) {
+    rrows = DEFAULT_RESUME;
+    rFallback = true;
+  } else {
+    rrows = content;
+    rFallback = false;
+  }
+
   renderResume();
-  if(isAdmin){ if(tableEmpty) seedDefaults(); verifyPublic(); }
-}
-/* brand-new empty table: store the starting resume once so everything afterwards comes from the database */
-let seeding=false;
-async function seedDefaults(){
-  if(!sb||!isAdmin||seeding||!tableEmpty) return; seeding=true;
-  const rows=[{category:"header",content:R.header,is_visible:true},...KEYS.map(k=>({category:k,content:R[k],is_visible:!hidden[k]}))];
-  const res=await dbw(sb.from(RT).upsert(rows,{onConflict:"category"}).select());
-  seeding=false;
-  if(res.error){fail("Couldn’t create the initial resume rows: "+res.error);return}
-  tableEmpty=false; toast("Resume saved to the database");
-}
-if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",loadResume); else loadResume();
-
-/* does a logged-out visitor really see what the admin saved? (separate anonymous client) */
-let pubClient=null, pubTimer=0;
-function verifyPublic(){
-  clearTimeout(pubTimer);
-  pubTimer=setTimeout(async()=>{
-    const el=$("pubnote"); if(!sb||!isAdmin) return;
-    let msg="";
-    try{
-      pubClient=pubClient||supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
-      const {data,error}=await pubClient.from(RT).select("category,is_visible");
-      if(error||!data) msg="⚠ Visitors can’t read resume_data"+(error?" ("+error.message+")":"")+", so they see the default resume. Run the SQL policy fix.";
-      else{
-        const seen={}; data.forEach(r=>{seen[r.category]=r.is_visible===false});
-        const bad=RCATS.filter(c=>!!hidden[c.key]!==!!seen[c.key]);
-        if(!data.length) msg="ℹ Nothing is saved yet, so visitors see the default resume.";
-        else if(bad.length) msg="⚠ Visitors don’t see your latest hide/show settings yet.";
-        else msg="✓ Visitors see exactly what you saved.";
-      }
-    }catch(e){msg="⚠ Couldn’t check the public view: "+e.message}
-    el.textContent=msg; el.hidden=!msg;
-  },300);
 }
 
-/* ---- section visibility (is_visible column) ---- */
-async function toggleSection(key){
-  if(!sb||!isAdmin) return;
-  const hide=!hidden[key];
-  const res=await saveSection(key,()=>{},hide);          // waits for Supabase before the UI changes
-  if(res.error){fail(res.error);return}
-  renderResume(); toast(hide?"Section hidden from visitors":"Section visible to visitors again"); verifyPublic();
-}
-
-/* ---- add / edit dialog (same pattern as “Add a skill”) ---- */
-const rdlg=$("rdlg"), rform=$("rform"), rfields=$("rfields"), rerr=$("rerr"), rsave=$("rsave"); let formCat=null, formItem=null;
-function openForm(key,item){
-  if(!canEdit()) return;
-  formCat=RCATS.find(c=>c.key===key); formItem=item||null; rerr.textContent="";
-  $("rdlg-title").textContent=(item?"Edit ":"Add ")+formCat.noun; rsave.textContent=item?"Save":"Add";
-  rfields.innerHTML="";
-  formCat.f.forEach(([f,label,ph,req,area])=>{
-    const l=document.createElement("label"), i=document.createElement(area?"textarea":"input");
-    if(!area) i.type="text"; i.name=f; i.placeholder=ph||""; i.required=!!req; i.maxLength=area?800:(f==="tags"||f==="learning"?300:160);
-    i.value=item?(item[f]||""):""; l.append(label+(req?" *":""),i); rfields.append(l);
-  });
-  rdlg.showModal(); rfields.querySelector("input,textarea").focus();
-}
-rform.addEventListener("submit",async e=>{
-  e.preventDefault(); if(!canEdit()||!formCat) return;
-  const vals={}; formCat.f.forEach(([f])=>{let v=rform.elements[f].value.trim(); if(f==="tags"||f==="learning") v=csv(v).join(", "); vals[f]=v});
-  if(!vals.title){rerr.textContent="Please fill in the required field.";return}
-  const key=formCat.key, editing=formItem, id=editing?editing.id:uid();
-  rsave.disabled=true; rerr.textContent="";
-  const res=await saveSection(key,next=>{
-    if(editing){const t=next.find(x=>x.id===id); if(t) Object.assign(t,vals)}
-    else next.push({id,...vals});
-  });
-  rsave.disabled=false;
-  if(res.error){rerr.textContent="Couldn’t save: "+res.error;fail(res.error);return}
-  rdlg.close(); flashId=id; renderResume(); toast(editing?"Saved “"+vals.title+"”":"Added “"+vals.title+"”");
+/* eye toggles for About + Skills (same section_visibility rows as resume sections) */
+const TOPSEC=[{key:"about",id:"about"},{key:"skills_section",id:"skills"}];
+TOPSEC.forEach(t=>{
+  const sec=$(t.id), h2=sec.querySelector("h2"), row=document.createElement("div");
+  row.className="h2row"; h2.replaceWith(row); row.append(h2);
+  t.eye=mk("button","eye admin-only"); t.eye.type="button"; t.eye.onclick=()=>toggleSection(t.key);
+  t.badge=mk("span","hbadge admin-only","Hidden from public"); t.badge.hidden=true;
+  row.append(t.eye,t.badge); t.sec=sec;
 });
-async function removeItem(key,item){
-  if(!confirm(`Delete “${item.title||"this item"}”?`)) return;
-  const res=await saveSection(key,next=>{const i=next.findIndex(x=>x.id===item.id);if(i>-1) next.splice(i,1)});
-  if(res.error){fail(res.error);return}
-  renderResume(); toast("Deleted");
+function applyTopVis(){
+  TOPSEC.forEach(t=>{
+    const hidden=sectionHidden(t.key), gone=!showSection(t.key);
+    t.sec.classList.toggle("is-hidden",hidden); t.sec.classList.toggle("vhide",gone);
+    t.eye.textContent=hidden?"🙈":"👁️";
+    t.eye.title=hidden?"Hidden from public. Click to show":"Visible to everyone. Click to hide";
+    t.eye.setAttribute("aria-label",t.eye.title); t.badge.hidden=!hidden;
+    document.querySelectorAll(`[data-vkey="${t.key}"]`).forEach(el=>el.classList.toggle("vhide",gone));
+  });
 }
-$("previewbtn").onclick=()=>{
-  preview=!preview; document.body.classList.toggle("preview",preview);
-  $("previewbtn").textContent=preview?"Exit preview":"Preview as visitor"; renderResume();
+setTimeout(()=>document.body.classList.remove("vis-pending"),4000); // safety net
+
+async function toggleSection(key) {
+  if (!sb || !isAdmin) return;
+
+  const cur = vis[key];
+  const hide = !(cur && cur.hidden);
+  const value = hide ? "hidden" : "visible";
+
+  const query = cur?.id
+    ? sb.from("resume_data")
+        .update({ subtitle: value })
+        .eq("category", "section_visibility")
+        .eq("title", key)
+    : sb.from("resume_data")
+        .insert({
+          category: "section_visibility",
+          title: key,
+          subtitle: value,
+          sort_order: 0
+        });
+
+  const { data, error } = await query.select();
+
+  if (error || !data?.length) {
+    console.error("Visibility save failed:", error);
+    toast("Failed to save visibility. Check console.");
+    return;
+  }
+
+  vis[key] = {
+    id: data[0].id,
+    hidden: hide
+  };
+
+  renderResume();
+
+  toast(hide ? "🙈 Hidden from public" : "👁️ Visible to public");
+}
+
+/* admin: add / delete items (edit text inline, then Save changes) */
+const NEWROW={education:"New institution",skill:"New skill group",project:"New project",language:"New language",certification:"New certification",extracurricular:"New group"};
+async function addItem(cat){
+  if(!canEdit()) return;
+  const {error}=await sb.from("resume_data").insert({category:cat,title:NEWROW[cat],sort_order:rrows.reduce((m,x)=>Math.max(m,x.sort_order||0),0)+1});
+  if(error){toast("Couldn’t add: "+error.message);return}
+  toast("Item added. Click its dashed text to edit"); loadResume();
+}
+async function removeRow(r){
+  if(!confirm(`Delete “${val(r,"title")||"this item"}”?`)) return;
+  const {error}=await sb.from("resume_data").delete().eq("id",r.id);
+  if(error){toast("Couldn’t delete: "+error.message);return}
+  delete dirty[r.id]; toast("Item deleted"); loadResume();
+}
+$("importresume").onclick=async()=>{
+  if(!sb||!isAdmin) return;
+  const {error}=await sb.from("resume_data").insert(DEFAULT_RESUME.map((r,i)=>({...r,sort_order:i+1})));
+  if(error){toast("Couldn’t import: "+error.message);return}
+  toast("Default resume data imported"); loadResume();
 };
+
+/* ====== Download Resume: builds a clean PDF from the live resume data ====== */
+const PDF_ACCENT="#14452f";
+function buildResumePDF(){
+  const E=(tag,css,txt)=>{const e=document.createElement(tag); if(css) e.style.cssText=css; if(txt!=null) e.textContent=txt; return e};
+  const clean=(r,f)=>{const v=String(val(r,f)||"").trim(); return v==="--"?"":v};
+  const live=sel=>{const e=document.querySelector(sel); return e?e.textContent.trim():""};
+  const A=(text,href)=>{const a=E("a","color:#111;text-decoration:none;",text); a.href=href; return a};
+  const sep=()=>E("span","color:#999;"," | ");
+  const inline=(parts,css)=>{const d=E("div",css); parts.forEach((x,i)=>{if(i) d.append(sep()); d.append(x)}); return d};
+
+  const root=E("div","width:700px;background:#fff;color:#111;font-family:Helvetica,Arial,sans-serif;font-size:10.5pt;line-height:1.45;text-align:left;");
+
+  /* header + contact (read live from the page so admin edits are included) */
+  root.append(E("div","font-size:24pt;font-weight:700;line-height:1.15;letter-spacing:-.01em;",live(".rname")||"Nirmit Nepal"));
+  const role=live('[data-edit="resume_role"]'); if(role) root.append(E("div","font-size:11.5pt;color:"+PDF_ACCENT+";font-weight:600;margin-top:2px;",role));
+  const contact=[];
+  const mail=document.querySelector('.rcontact a[href^="mailto:"]'); if(mail) contact.push(A(mail.textContent.trim(),mail.getAttribute("href")));
+  document.querySelectorAll('.rcontact a[href^="tel:"]').forEach(a=>contact.push(A(a.textContent.trim(),a.getAttribute("href"))));
+  const loc=live('[data-edit="resume_location"]'); if(loc) contact.push(E("span","",loc));
+  if(contact.length) root.append(inline(contact,"font-size:9.5pt;color:#333;margin-top:8px;"));
+  const links=RLINKS.map(l=>A(l.url.replace(/^https?:\/\//,"").replace(/\/$/,""),l.url));
+  root.append(inline(links,"font-size:9.5pt;color:#333;margin-top:3px;padding-bottom:10px;border-bottom:2px solid "+PDF_ACCENT+";"));
+
+  /* sections: same order as the page, hidden sections are never included */
+  const wrap=(inner)=>{const d=E("div","margin-bottom:8px;page-break-inside:avoid;break-inside:avoid;"); d.className="pdf-item"; d.append(inner); return d};
+  const BUILDERS={
+    education:rows=>rows.map(r=>{
+      const title=clean(r,"title"); if(!title) return null;
+      const top=E("div","display:flex;justify-content:space-between;gap:14px;align-items:flex-start;");
+      const left=E("div","flex:1;"); left.append(E("div","font-weight:700;",title));
+      [["subtitle","color:#333;"],["location","color:#666;font-size:9.5pt;"]].forEach(([f,c])=>{const v=clean(r,f); if(v) left.append(E("div",c,v))});
+      top.append(left); const when=clean(r,"period"); if(when) top.append(E("div","white-space:nowrap;color:#444;font-size:9.5pt;padding-top:2px;",when));
+      return wrap(top)}),
+    skill:rows=>rows.map(r=>{
+      const title=clean(r,"title"), tags=csv(clean(r,"tags")), learn=csv(clean(r,"learning")); if(!title||(!tags.length&&!learn.length)) return null;
+      const d=E("div",""); d.append(E("b","",title+": "),E("span","",tags.join(", ")));
+      if(learn.length) d.append(E("span","color:#555;font-style:italic;",(tags.length?" · ":"")+"learning: "+learn.join(", ")));
+      return wrap(d)}),
+    project:rows=>rows.map(r=>{
+      const title=clean(r,"title"); if(!title) return null;
+      const d=E("div",""); d.append(E("div","font-weight:700;",title));
+      const tags=csv(clean(r,"tags")); if(tags.length) d.append(E("div","color:"+PDF_ACCENT+";font-size:9.5pt;font-style:italic;",tags.join(", ")));
+      const det=clean(r,"details"); if(det) d.append(E("div","color:#222;margin-top:2px;",det));
+      return wrap(d)}),
+    language:rows=>{
+      const parts=rows.map(r=>{const t=clean(r,"title"),l=clean(r,"subtitle"); return t?(l?t+" ("+l+")":t):""}).filter(Boolean);
+      return parts.length?[wrap(E("div","",parts.join("  ·  ")))]:[]},
+    certification:rows=>rows.map(r=>{
+      const title=clean(r,"title"); if(!title) return null;
+      const d=E("div",""); d.append(E("div","font-weight:700;",title));
+      const meta=[clean(r,"subtitle"),clean(r,"period")].filter(Boolean).join("  ·  "); if(meta) d.append(E("div","color:#555;font-size:9.5pt;",meta));
+      const det=clean(r,"details"); if(det) d.append(E("div","color:#222;margin-top:2px;",det));
+      return wrap(d)}),
+    extracurricular:rows=>rows.map(r=>{
+      const title=clean(r,"title"), det=clean(r,"details"); if(!title) return null;
+      const d=E("div",""); d.append(E("div","font-weight:700;",title)); if(det) d.append(E("div","color:#222;",det));
+      return wrap(d)})
+  };
+  RCATS.forEach(cat=>{
+    if(sectionHidden(cat.key)) return;
+    const items=BUILDERS[cat.key](rrows.filter(r=>r.category===cat.key)).filter(Boolean);
+    if(!items.length) return;
+    const head=E("div","font-size:11pt;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:"+PDF_ACCENT+";border-bottom:1px solid "+PDF_ACCENT+";padding-bottom:3px;margin:16px 0 8px;",cat.title);
+    items[0].prepend(head);   /* heading travels with its first item so it is never stranded at a page bottom */
+    items.forEach(i=>root.append(i));
+  });
+  return root;
+}
+async function downloadResumePDF(mode){
+  const btn=$("downloadresume"), label=btn.querySelector("span");
+  if(typeof html2pdf==="undefined"){toast("PDF library didn’t load. Opening the print dialog instead"); window.print(); return}
+  const win=mode==="view"?window.open("","_blank"):null;   /* opened now so the browser doesn’t block it */
+  btn.disabled=true; label.textContent="Preparing PDF…";
+  try{
+    const opt={margin:[12,12,14,12],filename:"Nirmit_Nepal_Resume.pdf",image:{type:"jpeg",quality:.98},
+      html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff",scrollX:0,scrollY:0},
+      jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},pagebreak:{mode:["css","legacy"],avoid:".pdf-item"}};
+    const job=html2pdf().set(opt).from(buildResumePDF());
+    if(win){const blob=await job.outputPdf("blob"); win.location.href=URL.createObjectURL(blob)}
+    else await job.save();
+  }catch(e){
+    console.error("PDF generation failed:",e); if(win) win.close(); toast("Couldn’t create the PDF. Check the console");
+  }finally{ btn.disabled=false; label.textContent="Download Resume" }
+}
+$("downloadresume").onclick=()=>downloadResumePDF();
+$("viewresume").onclick=()=>downloadResumePDF("view");
 
 /* theme + scroll */
 const root=document.documentElement; let saved=null; try{saved=localStorage.getItem("theme")}catch(e){}
@@ -1180,84 +1089,7 @@ $("theme").onclick=()=>{root.dataset.theme=root.dataset.theme==="dark"?"light":"
 addEventListener("scroll",()=>{const h=document.documentElement;$("progress").style.transform=`scaleX(${h.scrollTop/(h.scrollHeight-h.clientHeight||1)})`},{passive:true});
 $("year").textContent=new Date().getFullYear();
  
-/* ====== animated background: domain-warped fBm shader (WebGL), theme-aware, CSS orbs as fallback ====== */
-(function(){
-  const cv=$("gl"); if(!cv) return;
-  const gl=cv.getContext("webgl",{alpha:false,antialias:false,depth:false,stencil:false,powerPreference:"low-power",preserveDrawingBuffer:false});
-  if(!gl) return;
-  const VS="attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}";
-  const FS=`precision mediump float;
-uniform vec2 r,m;uniform float t,k;uniform vec3 bg,ca,cb,cc;
-float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
-float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
-  return mix(mix(h(i),h(i+vec2(1.,0.)),f.x),mix(h(i+vec2(0.,1.)),h(i+vec2(1.,1.)),f.x),f.y);}
-float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*n(p);p=p*2.03+vec2(1.7,9.2);a*=.5;}return v;}
-void main(){
-  vec2 uv=gl_FragCoord.xy/r;
-  vec2 p=(uv-.5)*vec2(r.x/r.y,1.)*1.5+m*.12;
-  float s=t*.035;
-  vec2 q=vec2(fbm(p+vec2(0.,s)),fbm(p+vec2(5.2,1.3)-s));
-  vec2 w=vec2(fbm(p+2.6*q+vec2(1.7,9.2)+s*1.3),fbm(p+2.6*q+vec2(8.3,2.8)-s*1.1));
-  float f=fbm(p+2.6*w);
-  vec3 col=mix(ca,cb,smoothstep(.15,.85,q.x));
-  col=mix(col,cc,smoothstep(.25,.95,w.y)*.85);
-  float a=smoothstep(.22,.88,f)*k;
-  vec3 o=mix(bg,col,a);
-  o+=(h(gl_FragCoord.xy)-.5)/255.;
-  gl_FragColor=vec4(o,1.);
-}`;
-  const sh=(type,src)=>{const o=gl.createShader(type);gl.shaderSource(o,src);gl.compileShader(o);return gl.getShaderParameter(o,gl.COMPILE_STATUS)?o:null};
-  const vs=sh(gl.VERTEX_SHADER,VS), fs=sh(gl.FRAGMENT_SHADER,FS); if(!vs||!fs) return;
-  const pg=gl.createProgram(); gl.attachShader(pg,vs); gl.attachShader(pg,fs); gl.linkProgram(pg);
-  if(!gl.getProgramParameter(pg,gl.LINK_STATUS)) return;
-  gl.useProgram(pg);
-  const buf=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,buf);
-  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
-  const loc=gl.getAttribLocation(pg,"a"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
-  const U={}; ["r","m","t","k","bg","ca","cb","cc"].forEach(n=>U[n]=gl.getUniformLocation(pg,n));
-
-  const hex=v=>{v=(v||"").trim().replace("#","");if(v.length===3)v=[...v].map(c=>c+c).join("");const n=parseInt(v,16)||0;return[(n>>16&255)/255,(n>>8&255)/255,(n&255)/255]};
-  const names=["--gl-bg","--gl-a","--gl-b","--gl-c"], keys=["bg","ca","cb","cc"];
-  let cur=null, tgt=null;
-  const readTheme=()=>{
-    const cs=getComputedStyle(root);
-    tgt={k:parseFloat(cs.getPropertyValue("--gl-k"))||.6}; names.forEach((n,i)=>tgt[keys[i]]=hex(cs.getPropertyValue(n)));
-    if(!cur) cur=JSON.parse(JSON.stringify(tgt));
-  };
-  const ease=amt=>{let moving=false;
-    keys.forEach(k=>{for(let i=0;i<3;i++){const d=tgt[k][i]-cur[k][i];if(Math.abs(d)>.001){cur[k][i]+=d*amt;moving=true}else cur[k][i]=tgt[k][i]}});
-    const d=tgt.k-cur.k; if(Math.abs(d)>.001){cur.k+=d*amt;moving=true}else cur.k=tgt.k;
-    return moving};
-
-  const SCALE=.5; let W=1,H=1,time=Math.random()*50,raf=0,last=0,mx=0,my=0,tx=0,ty=0;
-  function size(){
-    W=Math.max(2,Math.round(innerWidth*SCALE)); H=Math.max(2,Math.round(innerHeight*SCALE));
-    cv.width=W; cv.height=H; gl.viewport(0,0,W,H); draw();
-  }
-  function draw(){
-    gl.uniform2f(U.r,W,H); gl.uniform2f(U.m,mx,my); gl.uniform1f(U.t,time); gl.uniform1f(U.k,cur.k);
-    keys.forEach(k=>gl.uniform3fv(U[k],cur[k]));
-    gl.drawArrays(gl.TRIANGLES,0,3);
-  }
-  function frame(now){
-    raf=requestAnimationFrame(frame);
-    if(now-last<33) return;                              // ~30fps is plenty for slow ambient motion
-    const dt=Math.min((now-last)/1000,.1); last=now; time+=dt;
-    mx+=(tx-mx)*.04; my+=(ty-my)*.04; ease(.08); draw();
-  }
-  const start=()=>{if(!raf&&!reduce){last=performance.now();raf=requestAnimationFrame(frame)}};
-  const stop=()=>{cancelAnimationFrame(raf);raf=0};
-
-  readTheme(); size(); root.classList.add("gl"); start();
-  addEventListener("resize",size);
-  addEventListener("pointermove",e=>{tx=(e.clientX/innerWidth-.5)*2;ty=(.5-e.clientY/innerHeight)*2},{passive:true});
-  document.addEventListener("visibilitychange",()=>document.hidden?stop():start());
-  new MutationObserver(()=>{readTheme(); if(reduce){cur=JSON.parse(JSON.stringify(tgt));draw()}}).observe(root,{attributes:true,attributeFilter:["data-theme"]});
-  cv.addEventListener("webglcontextlost",e=>{e.preventDefault();stop();root.classList.remove("gl")});
-  cv.addEventListener("webglcontextrestored",()=>location.reload());
-})();
-
-loadSkills(); loadContent(); loadLinks();
+loadSkills(); loadContent(); loadLinks(); loadResume();
 </script>
 </body>
 </html>

@@ -14,6 +14,7 @@
   --track:#dfe9e0; --shadow:0 1px 2px rgba(16,38,26,.06),0 14px 34px -18px rgba(16,38,26,.22);
   --grad:linear-gradient(90deg,#14452f,#2a8a56 55%,#4fae5e);
   --on-accent:#f4f8f2; --ghost-bd:#9fc3a9;
+  --gl-bg:#f4f8f2; --gl-a:#8fd6a3; --gl-b:#7fd0c4; --gl-c:#b3c0f0; --gl-k:.8;
   --orb-o:.9; --orb1:#a4dcb0; --orb2:#97d6cc; --orb3:#bfc9f2;
   --display:'Bricolage Grotesque',Georgia,sans-serif; --font:'Instrument Sans',system-ui,sans-serif;
 }
@@ -23,6 +24,7 @@ html[data-theme=dark]{
   --track:#1b3024; --shadow:0 12px 32px -16px rgba(0,0,0,.6);
   --grad:linear-gradient(90deg,#9bd06a,#58b06e 55%,#c8ec8a);
   --on-accent:#0b1710; --ghost-bd:#3d6b4c;
+  --gl-bg:#0b1710; --gl-a:#0f8a5f; --gl-b:#0b7c80; --gl-c:#4a4bc4; --gl-k:.42;
   --orb-o:.34; --orb1:#0c6e4c; --orb2:#0b6466; --orb3:#3a3b9c;
 }
 *{box-sizing:border-box}
@@ -35,7 +37,10 @@ button{font:inherit;color:inherit;cursor:pointer}
 body:not(.admin) .admin-only{display:none!important}
  
 #progress{position:fixed;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,var(--g2),var(--g3));transform:scaleX(0);transform-origin:left;z-index:30}
-/* ambient mesh gradient: 3 large blurred orbs, colours + opacity come from the theme variables (--orb-o, --orb1..3) */
+#gl{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:none}
+html.gl #gl{display:block}
+html.gl .blobs{display:none}
+/* ambient mesh gradient (CSS fallback when WebGL is unavailable): 3 large blurred orbs, colours + opacity come from the theme variables (--orb-o, --orb1..3) */
 .blobs{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;contain:strict}
 .blobs i{position:absolute;border-radius:50%;filter:blur(70px);opacity:var(--orb-o);pointer-events:none;will-change:transform;transform:translate3d(0,0,0);backface-visibility:hidden}
 .blobs i:nth-child(1){width:58vmax;height:46vmax;top:-16vmax;left:-14vmax;background:radial-gradient(closest-side,var(--orb1),transparent);animation:orbA 22s ease-in-out infinite alternate}
@@ -325,6 +330,7 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
 <body>
 <div id="progress"></div>
 <div class="blobs" aria-hidden="true"><i></i><i></i><i></i></div>
+<canvas id="gl" aria-hidden="true"></canvas>
 <div class="toast" id="toast" role="status"></div>
  
 <header class="nav">
@@ -1174,6 +1180,83 @@ $("theme").onclick=()=>{root.dataset.theme=root.dataset.theme==="dark"?"light":"
 addEventListener("scroll",()=>{const h=document.documentElement;$("progress").style.transform=`scaleX(${h.scrollTop/(h.scrollHeight-h.clientHeight||1)})`},{passive:true});
 $("year").textContent=new Date().getFullYear();
  
+/* ====== animated background: domain-warped fBm shader (WebGL), theme-aware, CSS orbs as fallback ====== */
+(function(){
+  const cv=$("gl"); if(!cv) return;
+  const gl=cv.getContext("webgl",{alpha:false,antialias:false,depth:false,stencil:false,powerPreference:"low-power",preserveDrawingBuffer:false});
+  if(!gl) return;
+  const VS="attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}";
+  const FS=`precision mediump float;
+uniform vec2 r,m;uniform float t,k;uniform vec3 bg,ca,cb,cc;
+float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+  return mix(mix(h(i),h(i+vec2(1.,0.)),f.x),mix(h(i+vec2(0.,1.)),h(i+vec2(1.,1.)),f.x),f.y);}
+float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*n(p);p=p*2.03+vec2(1.7,9.2);a*=.5;}return v;}
+void main(){
+  vec2 uv=gl_FragCoord.xy/r;
+  vec2 p=(uv-.5)*vec2(r.x/r.y,1.)*1.5+m*.12;
+  float s=t*.035;
+  vec2 q=vec2(fbm(p+vec2(0.,s)),fbm(p+vec2(5.2,1.3)-s));
+  vec2 w=vec2(fbm(p+2.6*q+vec2(1.7,9.2)+s*1.3),fbm(p+2.6*q+vec2(8.3,2.8)-s*1.1));
+  float f=fbm(p+2.6*w);
+  vec3 col=mix(ca,cb,smoothstep(.15,.85,q.x));
+  col=mix(col,cc,smoothstep(.25,.95,w.y)*.85);
+  float a=smoothstep(.22,.88,f)*k;
+  vec3 o=mix(bg,col,a);
+  o+=(h(gl_FragCoord.xy)-.5)/255.;
+  gl_FragColor=vec4(o,1.);
+}`;
+  const sh=(type,src)=>{const o=gl.createShader(type);gl.shaderSource(o,src);gl.compileShader(o);return gl.getShaderParameter(o,gl.COMPILE_STATUS)?o:null};
+  const vs=sh(gl.VERTEX_SHADER,VS), fs=sh(gl.FRAGMENT_SHADER,FS); if(!vs||!fs) return;
+  const pg=gl.createProgram(); gl.attachShader(pg,vs); gl.attachShader(pg,fs); gl.linkProgram(pg);
+  if(!gl.getProgramParameter(pg,gl.LINK_STATUS)) return;
+  gl.useProgram(pg);
+  const buf=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  const loc=gl.getAttribLocation(pg,"a"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+  const U={}; ["r","m","t","k","bg","ca","cb","cc"].forEach(n=>U[n]=gl.getUniformLocation(pg,n));
+
+  const hex=v=>{v=(v||"").trim().replace("#","");if(v.length===3)v=[...v].map(c=>c+c).join("");const n=parseInt(v,16)||0;return[(n>>16&255)/255,(n>>8&255)/255,(n&255)/255]};
+  const names=["--gl-bg","--gl-a","--gl-b","--gl-c"], keys=["bg","ca","cb","cc"];
+  let cur=null, tgt=null;
+  const readTheme=()=>{
+    const cs=getComputedStyle(root);
+    tgt={k:parseFloat(cs.getPropertyValue("--gl-k"))||.6}; names.forEach((n,i)=>tgt[keys[i]]=hex(cs.getPropertyValue(n)));
+    if(!cur) cur=JSON.parse(JSON.stringify(tgt));
+  };
+  const ease=amt=>{let moving=false;
+    keys.forEach(k=>{for(let i=0;i<3;i++){const d=tgt[k][i]-cur[k][i];if(Math.abs(d)>.001){cur[k][i]+=d*amt;moving=true}else cur[k][i]=tgt[k][i]}});
+    const d=tgt.k-cur.k; if(Math.abs(d)>.001){cur.k+=d*amt;moving=true}else cur.k=tgt.k;
+    return moving};
+
+  const SCALE=.5; let W=1,H=1,time=Math.random()*50,raf=0,last=0,mx=0,my=0,tx=0,ty=0;
+  function size(){
+    W=Math.max(2,Math.round(innerWidth*SCALE)); H=Math.max(2,Math.round(innerHeight*SCALE));
+    cv.width=W; cv.height=H; gl.viewport(0,0,W,H); draw();
+  }
+  function draw(){
+    gl.uniform2f(U.r,W,H); gl.uniform2f(U.m,mx,my); gl.uniform1f(U.t,time); gl.uniform1f(U.k,cur.k);
+    keys.forEach(k=>gl.uniform3fv(U[k],cur[k]));
+    gl.drawArrays(gl.TRIANGLES,0,3);
+  }
+  function frame(now){
+    raf=requestAnimationFrame(frame);
+    if(now-last<33) return;                              // ~30fps is plenty for slow ambient motion
+    const dt=Math.min((now-last)/1000,.1); last=now; time+=dt;
+    mx+=(tx-mx)*.04; my+=(ty-my)*.04; ease(.08); draw();
+  }
+  const start=()=>{if(!raf&&!reduce){last=performance.now();raf=requestAnimationFrame(frame)}};
+  const stop=()=>{cancelAnimationFrame(raf);raf=0};
+
+  readTheme(); size(); root.classList.add("gl"); start();
+  addEventListener("resize",size);
+  addEventListener("pointermove",e=>{tx=(e.clientX/innerWidth-.5)*2;ty=(.5-e.clientY/innerHeight)*2},{passive:true});
+  document.addEventListener("visibilitychange",()=>document.hidden?stop():start());
+  new MutationObserver(()=>{readTheme(); if(reduce){cur=JSON.parse(JSON.stringify(tgt));draw()}}).observe(root,{attributes:true,attributeFilter:["data-theme"]});
+  cv.addEventListener("webglcontextlost",e=>{e.preventDefault();stop();root.classList.remove("gl")});
+  cv.addEventListener("webglcontextrestored",()=>location.reload());
+})();
+
 loadSkills(); loadContent(); loadLinks();
 </script>
 </body>

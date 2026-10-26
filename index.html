@@ -132,6 +132,11 @@ body.admin .redit:focus{outline:2px solid var(--g2);background:var(--glow)}
 .meta{display:flex;flex-wrap:wrap;gap:4px 14px}
 .meta small{color:var(--muted);font-size:.9rem}
 .abnote{font-size:.85rem;opacity:.9;max-width:340px;line-height:1.35}
+.phones{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
+.phones .ph1{display:inline-flex;align-items:center;gap:6px}
+.addmini{border:1px dashed var(--g2);background:transparent;color:var(--ink);border-radius:999px;padding:2px 12px;font:600 .8rem var(--font);cursor:pointer}
+.addmini:hover{background:var(--soft)}
+.rctl{display:inline-flex;gap:4px;flex:none}
 body.preview .admin-only:not(.adminbar){display:none!important}
 body.preview [data-edit]{outline:none!important}
 .tagbox{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -157,9 +162,10 @@ body.preview [data-edit]{outline:none!important}
 .r-edu .deg{margin:3px 0 0;font-size:.98rem}
 .r-edu .loc{margin:2px 0 0;color:var(--muted);font-size:.9rem}
 .r-skills{display:grid}
-.skl{display:grid;grid-template-columns:180px 1fr;gap:8px 24px;padding:16px 0;border-top:1px dashed var(--line)}
+.skl{display:grid;grid-template-columns:minmax(180px,250px) 1fr;gap:8px 24px;padding:16px 0;border-top:1px dashed var(--line)}
 .skl:first-child{border-top:0;padding-top:0}
-.skl-name{font-weight:600;color:var(--muted);padding-top:5px}
+.skl-name{font-weight:600;color:var(--muted);padding-top:5px;flex-wrap:wrap}
+.skl-name .redit{min-width:8ch}
 .tags{display:flex;flex-wrap:wrap;gap:8px}
 .tag{background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:4px 14px;font-weight:600;font-size:.88rem;line-height:1.5}
 .tag.learn{background:transparent;border-style:dashed;color:var(--muted);font-weight:500}
@@ -362,19 +368,15 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
     <header class="rhead">
       <div class="rtop">
         <div>
-          <h3 class="rname">Nirmit Nepal</h3>
-          <p class="rrole" data-edit="resume_role">CSE Student | Aspiring Software Developer</p>
+          <h3 class="rname" id="hname"></h3>
+          <p class="rrole" id="hrole"></p>
         </div>
         <div class="ractions">
           <a class="btn" href="resume.pdf" download="Nirmit-Nepal-Resume.pdf"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download Resume</a>
           <a class="btn ghost" href="resume.pdf" target="_blank" rel="noopener noreferrer">View</a>
         </div>
       </div>
-      <ul class="rcontact">
-        <li><small>Email</small><a href="mailto:nirmitnepal1234@gmail.com">nirmitnepal1234@gmail.com</a></li>
-        <li><small>Phone</small><span><a href="tel:+919234179508">+91 9234179508</a> · <a href="tel:+9779803080969">+977 9803080969</a></span></li>
-        <li><small>Location</small><span data-edit="resume_location">Yelahanka, Bengaluru, Karnataka, India</span></li>
-      </ul>
+      <ul class="rcontact" id="hcontact"></ul>
       <div class="rlinks" id="rlinks"></div>
     </header>
  
@@ -393,7 +395,7 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
 </main>
 <footer>© <span id="year"></span> Nirmit Nepal</footer>
  
-<div class="adminbar admin-only"><span>Admin mode · click any dashed text to edit</span><span class="abnote" id="abnote" hidden></span><span class="abnote" id="pubnote" hidden></span><button class="pill" id="importresume" hidden>Import default resume data</button><span class="abnote" id="dirtynote" hidden></span><button class="pill" id="previewbtn">Preview as visitor</button><button class="pill" id="savetext">Save changes</button></div>
+<div class="adminbar admin-only"><span>Admin mode · click any dashed text to edit</span><span class="abnote" id="abnote" hidden></span><span class="abnote" id="pubnote" hidden></span><span class="abnote" id="dirtynote" hidden></span><button class="pill" id="previewbtn">Preview as visitor</button><button class="pill" id="savetext">Save changes</button></div>
  
 <dialog id="dlg">
   <form id="form">
@@ -564,17 +566,15 @@ $("savetext").onclick=async()=>{
   const btn=$("savetext"); btn.disabled=true;
   const rows=[...document.querySelectorAll("[data-edit]")].map(el=>({key:el.dataset.edit,value:el.textContent.trim()}));
   const t=await sb.from("site_content").upsert(rows);
-  let failed=t.error?t.error.message:"", saved=0;
-  for(const id of Object.keys(dirty)){
-    const row=rrows.find(x=>String(x.id)===id); if(!row){delete dirty[id];continue}
-    const patch=dirty[id];
-    const r=await dbw(sb.from(RT).update(patch).eq("id",row.id).select());
-    if(r.error){failed=r.error;continue}
-    Object.assign(row,patch); delete dirty[id]; saved++;
+  let failed=t.error?t.error.message:"";
+  for(const key of [...dirty]){
+    const r=await persist(key);
+    if(r.error) failed=r.error;
   }
-  btn.disabled=false; dirtyNote();
+  btn.disabled=false;
   toast(failed?"Couldn’t save: "+failed:"Changes saved");
 };
+ 
  
  
 /* ====== Auth ====== */
@@ -585,8 +585,7 @@ function setAdmin(on){
   if(skills.length) view();
   try{
     if(!on&&preview){preview=false;document.body.classList.remove("preview");$("previewbtn").textContent="Preview as visitor"}
-    if(on&&needsSeed) loadResume();
-    else{ if(rrows.length) renderResume(); if(on) verifyPublic(); }
+    renderResume(); if(on) verifyPublic();
   }catch(e){}
 }
 const ldlg=$("ldlg"), lform=$("lform");
@@ -727,114 +726,145 @@ RLINKS.forEach(l=>{
   const a=document.createElement("a"); a.className="chip sm"; a.href=l.url; a.target="_blank"; a.rel="noopener noreferrer";
   a.innerHTML=svgIcon(l.icon); const t=document.createElement("span"); t.textContent=l.label; a.append(t); $("rlinks").append(a);
 });
+/* Table shape: resume_data(category text unique, content jsonb). One row per section; the whole section is saved with upsert. */
+const RT="resume_data";
 const RCATS=[
-  {key:"education",title:"Education",add:"+ Add education",dlg:"Add education",f:[["title","Institution","e.g. B.M.S. Institute of Technology and Management",1],["subtitle","Degree / programme","e.g. B.E. / B.Tech in CSE"],["period","Years / grades","e.g. 2026 – 2030"],["location","Location","City, country"]]},
-  {key:"skill",title:"Technical skills",add:"+ Add a skill group",dlg:"Add a skill group",f:[["title","Group name","e.g. Databases",1],["tags","Skills (comma-separated)","e.g. MySQL, PostgreSQL"],["learning","Still learning (comma-separated, shown dimmed)","e.g. MongoDB"]]},
-  {key:"project",title:"Projects",add:"+ Add a project",dlg:"Add a project",f:[["title","Project name","e.g. Weather app",1],["tags","Tech stack (comma-separated)","e.g. Python, Flask, SQLite"],["details","Details","What it does and what you built",0,1]]},
-  {key:"language",title:"Languages spoken",add:"+ Add a language",dlg:"Add a language",f:[["title","Language","e.g. Spanish",1],["subtitle","Level","e.g. Beginner, Fluent, Native"]]},
-  {key:"certification",title:"Certifications & online courses",add:"+ Add a certification",dlg:"Add a certification",f:[["title","Certification / course","e.g. CS50x",1],["subtitle","Issuer / platform","e.g. Harvard / edX"],["period","Date","e.g. Aug 2026"],["details","Notes","Anything worth mentioning",0,1]]},
-  {key:"extracurricular",title:"Extracurriculars, achievements & community",add:"+ Add an activity",dlg:"Add an activity",f:[["title","Group (e.g. Clubs & Societies)","e.g. Coding club",1],["details","Details","Role, achievement or event",0,1]]}
+  {key:"education",title:"Education",add:"+ Add Education",noun:"education",f:[["title","Institution","e.g. B.M.S. Institute of Technology and Management",1],["subtitle","Degree / programme","e.g. B.E. / B.Tech in CSE"],["period","Timeline / years","e.g. 2026 – 2030"],["location","Location","City, country"]]},
+  {key:"skills",title:"Technical skills",add:"+ Add Skill Group",noun:"skill group",f:[["title","Group name","e.g. Databases",1],["tags","Skills (comma-separated)","e.g. MySQL, PostgreSQL"],["learning","Still learning (comma-separated, shown dimmed)","e.g. MongoDB"]]},
+  {key:"projects",title:"Projects",add:"+ Add Project",noun:"project",f:[["title","Title","e.g. Weather app",1],["tags","Tech stack (comma-separated)","e.g. Python, Flask, SQLite"],["details","Details / description","What it does and what you built",0,1]]},
+  {key:"languages_spoken",title:"Languages spoken",add:"+ Add Language",noun:"language",f:[["title","Language","e.g. Spanish",1],["subtitle","Level","e.g. Beginner, Fluent, Native"]]},
+  {key:"certifications",title:"Certifications & online courses",add:"+ Add Item",noun:"certification",f:[["title","Certification / course","e.g. CS50x",1],["subtitle","Issuer / platform","e.g. Harvard / edX"],["period","Date","e.g. Aug 2026"],["details","Notes","Anything worth mentioning",0,1]]},
+  {key:"extracurriculars",title:"Extracurriculars, achievements & community",add:"+ Add Item",noun:"activity",f:[["title","Group (e.g. Clubs & Societies)","e.g. Coding club",1],["details","Details","Role, achievement or event",0,1]]}
 ];
-const DEFAULT_RESUME=[
-  {category:"education",title:"B.M.S. Institute of Technology and Management (BMSIT&M), VTU",subtitle:"B.E. / B.Tech in CSE · 1st semester",period:"2026 – 2030",location:"Bengaluru, Karnataka, India"},
-  {category:"education",title:"Himalayan Whitehouse International College",subtitle:"+2 Science · NEB High School Diploma",period:"2025",location:"Kathmandu, Nepal"},
-  {category:"education",title:"DAV Sushil Kedia Vishwa Bharati Higher Secondary School",subtitle:"Secondary Education",period:"Grades 7 – 10",location:"Kathmandu, Nepal"},
-  {category:"education",title:"Aksharaa School",subtitle:"Middle School",period:"Grades 1 – 6",location:"Kathmandu, Nepal"},
-  {category:"skill",title:"Languages",tags:"Python, C, C++, JavaScript, HTML, CSS",learning:"Java, SQL"},
-  {category:"skill",title:"Web & Frameworks",tags:"Supabase",learning:"React, Node.js, Express, Tailwind CSS, REST APIs"},
-  {category:"skill",title:"Developer Tools",tags:"Git, GitHub, VS Code, Vercel"},
-  {category:"skill",title:"Core Competencies",tags:"Problem-Solving, Object-Oriented Design, Basic Database Management, Web Accessibility"},
-  {category:"project",title:"Personal Portfolio Website",tags:"HTML5, CSS3, JavaScript, Supabase, Vercel",details:"Built and deployed a responsive personal portfolio with dark mode, dynamic admin-managed contact options, and Supabase integration."},
-  {category:"project",title:"CLI / Console Applications",tags:"Python / C++",details:"--"},
-  {category:"project",title:"Automation Scripts",tags:"Python",details:"--"},
-  {category:"project",title:"Web Applications",tags:"JavaScript / Supabase",details:"--"},
-  {category:"language",title:"Nepali",subtitle:"Native"},
-  {category:"language",title:"Hindi",subtitle:"Fluent"},
-  {category:"language",title:"English",subtitle:"Professional / Fluent"},
-  {category:"certification",title:"--"},
-  {category:"extracurricular",title:"Coding Platforms",details:"--"},
-  {category:"extracurricular",title:"Clubs & Societies",details:"--"},
-  {category:"extracurricular",title:"Competitions & Events",details:"--"}
-];
-const RT="resume_data", CATKEYS=RCATS.map(c=>c.key);
-let rrows=[], rFallback=false, vis={}, dirty={}, tagState={}, needsSeed=false, seeding=false, readErr="", preview=false, flashId=null;
+const KEYS=RCATS.map(c=>c.key);
+const DEFAULTS={
+  header:{name:"Nirmit Nepal",role:"CSE Student | Aspiring Software Developer",email:"nirmitnepal1234@gmail.com",phones:["+91 9234179508","+977 9803080969"],location:"Yelahanka, Bengaluru, Karnataka, India"},
+  education:[
+    {title:"B.M.S. Institute of Technology and Management (BMSIT&M), VTU",subtitle:"B.E. / B.Tech in CSE · 1st semester",period:"2026 – 2030",location:"Bengaluru, Karnataka, India"},
+    {title:"Himalayan Whitehouse International College",subtitle:"+2 Science · NEB High School Diploma",period:"2025",location:"Kathmandu, Nepal"},
+    {title:"DAV Sushil Kedia Vishwa Bharati Higher Secondary School",subtitle:"Secondary Education",period:"Grades 7 – 10",location:"Kathmandu, Nepal"},
+    {title:"Aksharaa School",subtitle:"Middle School",period:"Grades 1 – 6",location:"Kathmandu, Nepal"}],
+  skills:[
+    {title:"Languages",tags:"Python, C, C++, JavaScript, HTML, CSS",learning:"Java, SQL"},
+    {title:"Web & Frameworks",tags:"Supabase",learning:"React, Node.js, Express, Tailwind CSS, REST APIs"},
+    {title:"Developer Tools",tags:"Git, GitHub, VS Code, Vercel"},
+    {title:"Core Competencies",tags:"Problem-Solving, Object-Oriented Design, Basic Database Management, Web Accessibility"}],
+  projects:[
+    {title:"Personal Portfolio Website",tags:"HTML5, CSS3, JavaScript, Supabase, Vercel",details:"Built and deployed a responsive personal portfolio with dark mode, dynamic admin-managed contact options, and Supabase integration."},
+    {title:"CLI / Console Applications",tags:"Python, C++",details:"--"},
+    {title:"Automation Scripts",tags:"Python",details:"--"},
+    {title:"Web Applications",tags:"JavaScript, Supabase",details:"--"}],
+  languages_spoken:[{title:"Nepali",subtitle:"Native"},{title:"Hindi",subtitle:"Fluent"},{title:"English",subtitle:"Professional / Fluent"}],
+  certifications:[{title:"--"}],
+  extracurriculars:[{title:"Coding Platforms",details:"--"},{title:"Clubs & Societies",details:"--"},{title:"Competitions & Events",details:"--"}]
+};
+ 
+/* ---- state ---- */
+let R={}, vis={}, readErr="", preview=false, flashItem=null;
+const dirty=new Set();
 const adm=()=>isAdmin&&!preview;
-const canEdit=()=>!!(adm()&&!rFallback&&sb);
+const canEdit=()=>!!(adm()&&sb);
+const clone=o=>JSON.parse(JSON.stringify(o));
+ 
+/* ---- normalising whatever is stored (accepts older / differently named fields) ---- */
+const AL={title:["title","institution","name","school","project","language","course","group"],subtitle:["subtitle","degree","program","programme","level","issuer","platform"],period:["period","years","timeline","date","year"],location:["location"],tags:["tags","tech_stack","techStack","stack","technologies","skills","items"],learning:["learning"],details:["details","description","desc","notes"]};
+const pick=(o,names)=>{for(const n of names){const v=o[n];if(v!=null&&v!=="") return Array.isArray(v)?v.join(", "):String(v)}return ""};
+function normItem(cat,x){
+  if(typeof x==="string"){
+    const m=cat.key==="languages_spoken"&&x.match(/^(.*?)\s*\((.*)\)\s*$/);   // "Nepali (Native)" -> language + level
+    x=m?{title:m[1],subtitle:m[2]}:{title:x};
+  }
+  if(!x||typeof x!=="object") x={};
+  const o={}; cat.f.forEach(([f])=>{o[f]=pick(x,AL[f]||[f])}); return o;
+}
+function normCat(key,c){
+  if(typeof c==="string"){try{c=JSON.parse(c)}catch(e){}}
+  if(key==="header"){
+    c=(c&&typeof c==="object"&&!Array.isArray(c))?c:{};
+    const d=DEFAULTS.header, ph=Array.isArray(c.phones)?c.phones:(c.phones||c.phone?String(c.phones||c.phone).split(/\s*[\/,|]\s*/):d.phones);
+    return {name:c.name||d.name,role:c.role||c.title||d.role,email:c.email||d.email,phones:ph.map(String).filter(Boolean),location:c.location||d.location};
+  }
+  const cat=RCATS.find(k=>k.key===key);
+  return Array.isArray(c)?c.map(x=>normItem(cat,x)):clone(DEFAULTS[key]).map(x=>normItem(cat,x));
+}
+ 
+/* ---- tiny DOM helpers ---- */
 function setTxt(e,t){e.textContent=t; if((t||"").trim()==="--") e.classList.add("ph")}
 function mk(tag,cls,txt){const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) setTxt(e,txt); return e}
-const ri=(tag,cls,r)=>{const e=mk(tag,cls);e.dataset.id=r.id;return e};
 const put=(p,...c)=>{c.forEach(x=>{if(x) p.append(x)});return p};
 const csv=v=>(v||"").split(",").map(x=>x.trim()).filter(Boolean);
-const val=(row,f)=>dirty[row.id]&&f in dirty[row.id]?dirty[row.id][f]:(row[f]||"");
+const elOf=new WeakMap();
+const ri=(tag,cls,item)=>{const e=mk(tag,cls);elOf.set(item,e);return e};
 function selectAll(el){const r=document.createRange();r.selectNodeContents(el);const g=getSelection();g.removeAllRanges();g.addRange(r)}
-function dirtyNote(){const n=Object.keys(dirty).length,e=$("dirtynote");e.hidden=!n;e.textContent="● "+n+" unsaved"}
-addEventListener("beforeunload",e=>{if(Object.keys(dirty).length){e.preventDefault();e.returnValue=""}});
+function dirtyNote(){const n=dirty.size,e=$("dirtynote");e.hidden=!n;e.textContent="● "+n+" unsaved"}
+const markDirty=k=>{dirty.add(k);dirtyNote()};
+addEventListener("beforeunload",e=>{if(dirty.size){e.preventDefault();e.returnValue=""}});
  
-/* a write that must really change rows: Supabase silently returns 0 rows when RLS blocks an update/delete */
+/* ---- database: every change is an upsert of the whole section, and we verify a row really came back ---- */
 async function dbw(q){
   const {data,error}=await q;
   if(error) return {error:error.message};
   if(!data||!data.length) return {error:"blocked by database permissions (check your RLS policies)"};
   return {data};
 }
+async function persist(key){
+  const content=key==="section_visibility"?vis:R[key];
+  const res=await dbw(sb.from(RT).upsert({category:key,content},{onConflict:"category"}).select());
+  if(!res.error){dirty.delete(key);dirtyNote()}
+  return res;
+}
  
-/* single-line editable text: dashed + contenteditable for the admin, plain text (or nothing if empty) for visitors */
-function ed(tag,cls,row,f,ph){
-  const v=val(row,f);
+/* ---- inline-editable text: dashed + contenteditable for the admin, plain text (or nothing if empty) for visitors ---- */
+function ed(tag,cls,key,obj,f,ph){
+  const v=obj[f]||"";
   if(!canEdit()){ if(!v) return null; return mk(tag,cls,v) }
-  const e=mk(tag,cls,v); e.classList.add("redit"); e.contentEditable="true"; e.spellcheck=false; e.dataset.ph=ph; e.dataset.rid=row.id;
-  e.addEventListener("input",()=>{const t=e.textContent.trim();(dirty[row.id]=dirty[row.id]||{})[f]=t;e.classList.toggle("ph",t==="--");dirtyNote()});
+  const e=mk(tag,cls,v); e.classList.add("redit"); e.contentEditable="true"; e.spellcheck=false; e.dataset.ph=ph;
+  e.addEventListener("input",()=>{const t=e.textContent.trim();obj[f]=t;e.classList.toggle("ph",t==="--");markDirty(key)});
   e.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();e.blur()}});
   e.addEventListener("paste",ev=>{ev.preventDefault();document.execCommand("insertText",false,(ev.clipboardData.getData("text/plain")||"").replace(/\s*\n\s*/g," "))});
   return e;
 }
-function delBtn(row){
+function iconBtn(txt,label,fn){const b=mk("button","icon-btn sm admin-only",txt);b.type="button";b.title=label;b.setAttribute("aria-label",label);b.onclick=fn;return b}
+function ctl(key,item,onlyDelete){
   if(!canEdit()) return null;
-  const b=mk("button","icon-btn sm admin-only","✕"); b.type="button"; b.setAttribute("aria-label","Delete item"); b.title="Delete";
-  b.onclick=()=>removeRow(row); return b;
+  const c=mk("span","rctl");
+  if(!onlyDelete) c.append(iconBtn("✎","Edit",()=>openForm(key,item)));
+  c.append(iconBtn("🗑️","Delete",()=>removeItem(key,item)));
+  return c;
 }
 const chips=(csvStr,cls)=>csv(csvStr).map(x=>mk("span",cls||"tag",x));
  
-/* chip editor shared by Technical skills and Projects: click = dim / undim, double-click = rename, × = remove, input = add */
-function tagItems(row){
-  if(!tagState[row.id]) tagState[row.id]=[...csv(val(row,"tags")).map(t=>({t,learn:false})),...csv(val(row,"learning")).map(t=>({t,learn:true}))];
-  return tagState[row.id];
-}
-function tagCommit(row){
-  const it=tagItems(row); it.sort((a,b)=>a.learn-b.learn);
-  const d=dirty[row.id]=dirty[row.id]||{};
-  d.tags=it.filter(x=>!x.learn).map(x=>x.t).join(", ");
-  d.learning=it.filter(x=>x.learn).map(x=>x.t).join(", ");
-  dirtyNote();
-}
-function tagBox(row,cls){
+/* chip editor for Technical skills + Projects: click = dim / undim, double-click = rename, × = remove, input = add */
+function tagBox(key,item,cls){
   const box=mk("div","tagbox"+(cls?" "+cls:""));
+  const it=[...csv(item.tags).map(t=>({t,learn:false})),...csv(item.learning).map(t=>({t,learn:true}))];
+  const commit=()=>{it.sort((a,b)=>a.learn-b.learn);item.tags=it.filter(x=>!x.learn).map(x=>x.t).join(", ");item.learning=it.filter(x=>x.learn).map(x=>x.t).join(", ");markDirty(key)};
   const paint=focusAdd=>{
-    box.innerHTML=""; const it=tagItems(row);
-    it.forEach(item=>{
-      const c=mk("span","tag chip-ed"+(item.learn?" learn":"")), tx=mk("span","tx",item.t);
+    box.innerHTML="";
+    it.forEach(item2=>{
+      const c=mk("span","tag chip-ed"+(item2.learn?" learn":"")), tx=mk("span","tx",item2.t);
       tx.title="Click: dim / undim · double-click: rename";
-      tx.onclick=()=>{clearTimeout(tx.t);tx.t=setTimeout(()=>{item.learn=!item.learn;tagCommit(row);paint()},220)};
+      tx.onclick=()=>{clearTimeout(tx.t);tx.t=setTimeout(()=>{item2.learn=!item2.learn;commit();paint()},220)};
       tx.ondblclick=()=>{
         clearTimeout(tx.t); tx.contentEditable="true"; tx.focus(); selectAll(tx);
         const done=ok=>{
           tx.onblur=null; tx.contentEditable="false";
           const v=tx.textContent.replace(/,/g," ").trim();
-          if(ok&&v!==item.t){ if(v) item.t=v; else it.splice(it.indexOf(item),1); tagCommit(row) }
+          if(ok&&v!==item2.t){ if(v) item2.t=v; else it.splice(it.indexOf(item2),1); commit() }
           paint();
         };
         tx.onblur=()=>done(true);
         tx.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();done(true)}else if(e.key==="Escape"){e.preventDefault();done(false)}};
       };
       const x=mk("button","x","×"); x.type="button"; x.title="Remove";
-      x.onclick=()=>{it.splice(it.indexOf(item),1);tagCommit(row);paint()};
+      x.onclick=()=>{it.splice(it.indexOf(item2),1);commit();paint()};
       c.append(tx,x); box.append(c);
     });
     const inp=document.createElement("input"); inp.className="tag-add"; inp.placeholder="+ add"; inp.maxLength=40; inp.setAttribute("aria-label","Add a tag");
     const add=()=>{
       const parts=inp.value.split(",").map(v=>v.trim()).filter(Boolean); inp.value="";
       if(!parts.length) return false;
-      parts.forEach(t=>it.push({t,learn:false})); tagCommit(row); return true;
+      parts.forEach(t=>it.push({t,learn:false})); commit(); return true;
     };
     inp.onkeydown=e=>{if(e.key==="Enter"||e.key===","){e.preventDefault();if(add()) paint(true)}};
     inp.onblur=()=>{if(add()) paint()};
@@ -843,52 +873,80 @@ function tagBox(row,cls){
   paint(); return box;
 }
  
+/* ---- section builders ---- */
 const BUILD={
-  education:rows=>{const ol=mk("ol","r-edu");rows.forEach(r=>{
+  education:(items,K)=>{const ol=mk("ol","r-edu");items.forEach(r=>{
     const li=ri("li","ritem",r);
-    li.append(ed("div","when",r,"period","Years / grades")||mk("div","when",""));
-    const d=mk("div"); d.append(put(mk("div","hrow"),ed("h4",null,r,"title","Institution"),delBtn(r)));
-    put(d,ed("p","deg",r,"subtitle","Degree / programme"),ed("p","loc",r,"location","Location"));
+    li.append(ed("div","when",K,r,"period","Years")||mk("div","when",""));
+    const d=mk("div"); d.append(put(mk("div","hrow"),ed("h4",null,K,r,"title","Institution"),ctl(K,r)));
+    put(d,ed("p","deg",K,r,"subtitle","Degree / programme"),ed("p","loc",K,r,"location","Location"));
     li.append(d); ol.append(li)});return ol},
-  skill:rows=>{const w=mk("div","r-skills");let any=false;rows.forEach(r=>{
+  skills:(items,K)=>{const w=mk("div","r-skills");let any=false;items.forEach(r=>{
     const row=ri("div","skl ritem",r);
-    row.append(put(mk("div","skl-name hrow"),ed("span",null,r,"title","Group name"),delBtn(r)));
+    row.append(put(mk("div","skl-name hrow"),ed("span",null,K,r,"title","Group name"),ctl(K,r)));
     const box=mk("div");
-    if(canEdit()) box.append(tagBox(r));
+    if(canEdit()) box.append(tagBox(K,r));
     else{
-      const t=mk("div","tags"); chips(val(r,"tags")).forEach(c=>t.append(c));
-      chips(val(r,"learning"),"tag learn").forEach(c=>{c.title="Currently learning";t.append(c);any=true}); box.append(t);
+      const t=mk("div","tags"); chips(r.tags).forEach(c=>t.append(c));
+      chips(r.learning,"tag learn").forEach(c=>{c.title="Currently learning";t.append(c);any=true}); box.append(t);
     }
     row.append(box); w.append(row)});
     if(any) w.append(mk("p","note","Dashed tags are things I’m still learning.")); return w},
-  project:rows=>{const g=mk("div","r-proj");rows.forEach(r=>{
+  projects:(items,K)=>{const g=mk("div","r-proj");items.forEach(r=>{
     const c=ri("article","proj ritem",r);
-    c.append(put(mk("div","hrow"),ed("h4",null,r,"title","Project name"),delBtn(r)));
-    if(canEdit()) c.append(tagBox(r,"sm"));
-    else{const tg=[...chips(val(r,"tags")),...chips(val(r,"learning"),"tag learn")];if(tg.length) c.append(put(mk("div","tags sm"),...tg))}
-    put(c,ed("p","det",r,"details","Details"));
+    c.append(put(mk("div","hrow"),ed("h4",null,K,r,"title","Project title"),ctl(K,r)));
+    if(canEdit()) c.append(tagBox(K,r,"sm"));
+    else{const tg=[...chips(r.tags),...chips(r.learning,"tag learn")];if(tg.length) c.append(put(mk("div","tags sm"),...tg))}
+    put(c,ed("p","det",K,r,"details","Details / description"));
     g.append(c)});return g},
-  language:rows=>{const g=mk("div","r-lang");rows.forEach(r=>{
-    g.append(put(ri("div","lang ritem",r),ed("b",null,r,"title","Language"),ed("span",null,r,"subtitle","Level"),delBtn(r)))});return g},
-  certification:rows=>{const ul=mk("ul","r-cert");rows.forEach(r=>{
+  languages_spoken:(items,K)=>{const g=mk("div","r-lang");items.forEach(r=>{
+    g.append(put(ri("div","lang ritem",r),ed("b",null,K,r,"title","Language"),ed("span",null,K,r,"subtitle","Level"),ctl(K,r,true)))});return g},
+  certifications:(items,K)=>{const ul=mk("ul","r-cert");items.forEach(r=>{
     const li=ri("li","ritem",r);
-    li.append(put(mk("div","hrow"),ed("b",null,r,"title","Certification / course"),delBtn(r)));
-    const m=put(mk("div","meta"),ed("small",null,r,"subtitle","Issuer / platform"),ed("small",null,r,"period","Date"));
+    li.append(put(mk("div","hrow"),ed("b",null,K,r,"title","Certification / course"),ctl(K,r)));
+    const m=put(mk("div","meta"),ed("small",null,K,r,"subtitle","Issuer / platform"),ed("small",null,K,r,"period","Date"));
     if(m.children.length) li.append(m);
-    put(li,ed("p",null,r,"details","Notes")); ul.append(li)});return ul},
-  extracurricular:rows=>{const g=mk("div","r-xc");rows.forEach(r=>{
+    put(li,ed("p",null,K,r,"details","Notes")); ul.append(li)});return ul},
+  extracurriculars:(items,K)=>{const g=mk("div","r-xc");items.forEach(r=>{
     const x=ri("div","xc ritem",r);
-    x.append(put(mk("div","hrow"),ed("h4",null,r,"title","Group (e.g. Clubs & Societies)"),delBtn(r)));
-    put(x,ed("p",null,r,"details","Details")); g.append(x)});return g}
+    x.append(put(mk("div","hrow"),ed("h4",null,K,r,"title","Group (e.g. Clubs & Societies)"),ctl(K,r)));
+    put(x,ed("p",null,K,r,"details","Details")); g.append(x)});return g}
 };
  
+/* ---- header & contact info (stored as category "header") ---- */
+function renderHeader(){
+  const h=R.header, K="header";
+  const name=$("hname"), role=$("hrole"), ul=$("hcontact");
+  name.innerHTML=""; role.innerHTML=""; ul.innerHTML="";
+  put(name,ed("span",null,K,h,"name","Your name")); put(role,ed("span",null,K,h,"role","Title / tagline"));
+  const li=(label,...nodes)=>{const l=document.createElement("li");l.append(mk("small",null,label));put(l,...nodes);ul.append(l)};
+  let em=null;
+  if(canEdit()) em=ed("div",null,K,h,"email","email address");
+  else if(h.email){em=document.createElement("a");em.href="mailto:"+h.email;em.textContent=h.email}
+  li("Email",em);
+  const ph=mk("div","phones");
+  h.phones.forEach((n,i)=>{
+    if(canEdit()){
+      const w=mk("span","ph1"); w.append(ed("span",null,K,h.phones,i,"phone"));
+      w.append(iconBtn("🗑️","Remove phone number",()=>{h.phones.splice(i,1);markDirty(K);renderHeader()}));
+      ph.append(w);
+    }else if(n){const a=document.createElement("a");a.href="tel:"+n.replace(/[^\d+]/g,"");a.textContent=n;ph.append(a)}
+  });
+  if(canEdit()){const b=mk("button","addmini admin-only","+ phone");b.type="button";b.onclick=()=>{h.phones.push("");markDirty(K);renderHeader();const els=$("hcontact").querySelectorAll(".ph1 .redit");if(els.length) els[els.length-1].focus()};ph.append(b)}
+  li("Phone",ph);
+  li("Location",ed("span",null,K,h,"location","City, region, country"));
+}
+ 
+/* ---- the whole resume ---- */
 function renderResume(){
+  if(!R.header) return;
+  renderHeader();
   const box=$("rbody"); box.innerHTML="";
   RCATS.forEach(cat=>{
-    const hidden=!!(vis[cat.key]&&vis[cat.key].hidden);
-    if(hidden&&!adm()) return;                        // visitors never see hidden sections
-    const rows=rrows.filter(r=>r.category===cat.key);
-    const sec=mk("div","rsec"+(rows.length?"":" empty")+(hidden?" is-hidden":""));
+    const hidden=!!vis[cat.key];
+    if(hidden&&!adm()) return;                         // visitors never see hidden sections
+    const items=R[cat.key];
+    const sec=mk("div","rsec"+(items.length?"":" empty")+(hidden?" is-hidden":""));
     if(cat.key==="education") sec.id="education-list";
     const head=mk("div","rsec-head"), left=mk("div","rsec-title");
     left.append(mk("h3",null,cat.title));
@@ -898,50 +956,38 @@ function renderResume(){
     left.append(eye);
     if(hidden) left.append(mk("span","hbadge admin-only","Hidden from public"));
     head.append(left);
-    if(canEdit()){const add=mk("button","pill admin-only",cat.add);add.type="button";add.onclick=()=>openAdd(cat.key);head.append(add)}
+    if(canEdit()){const add=mk("button","pill admin-only",cat.add);add.type="button";add.onclick=()=>openForm(cat.key);head.append(add)}
     sec.append(head);
     const body=mk("div","rsec-body");
-    body.append(rows.length?BUILD[cat.key](rows):mk("p","note","Nothing here yet."+(canEdit()?" Use the Add button above to create the first entry.":"")));
-    if(canEdit()&&(cat.key==="skill"||cat.key==="project")) body.append(mk("p","thint","Click a chip to dim / undim it · double-click to rename · × to remove · type in “+ add” to add more."));
+    body.append(items.length?BUILD[cat.key](items,cat.key):mk("p","note","Nothing here yet."+(canEdit()?" Use the Add button above to create the first entry.":"")));
+    if(canEdit()&&(cat.key==="skills"||cat.key==="projects")) body.append(mk("p","thint","Click a chip to dim / undim it · double-click to rename · × to remove · type in “+ add” to add more."));
     sec.append(body); box.append(sec);
   });
-  const msg=readErr||(rFallback&&sb&&isAdmin?"Showing the built-in default resume. Import it to enable editing.":"");
-  $("abnote").hidden=!msg; $("abnote").textContent=msg;
-  $("importresume").hidden=!(rFallback&&sb);
-  if(flashId!=null){
-    const el=box.querySelector(`.ritem[data-id="${flashId}"]`);
+  $("abnote").hidden=!readErr; $("abnote").textContent=readErr;
+  if(flashItem){
+    const el=elOf.get(flashItem);
     if(el){el.scrollIntoView({block:"center",behavior:"smooth"});el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),2000)}
-    flashId=null;
+    flashItem=null;
   }
 }
  
 async function loadResume(){
-  vis={}; readErr=""; needsSeed=false;
-  Object.keys(tagState).forEach(id=>{if(!(dirty[id]&&"tags" in dirty[id])) delete tagState[id]});
-  if(!sb){rrows=DEFAULT_RESUME;rFallback=true;renderResume();return}
-  const {data,error}=await sb.from(RT).select("*").order("sort_order").order("created_at");
-  if(error){console.error(error);readErr="Couldn’t read resume_data: "+error.message}
-  const all=data||[];
-  all.filter(r=>r.category==="section_visibility").forEach(r=>{vis[r.title]={id:r.id,hidden:r.subtitle==="hidden"}});
-  const content=all.filter(r=>CATKEYS.includes(r.category));
-  if(!error&&!content.length&&!all.some(r=>r.category==="meta")){
-    needsSeed=true;                                   // brand-new table: fill it once so everything is editable
-    if(isAdmin&&await seedDefaults()) return loadResume();
+  R=clone(DEFAULTS); vis={}; readErr="";
+  KEYS.forEach(k=>{R[k]=normCat(k,R[k])});
+  if(sb){
+    const {data,error}=await sb.from(RT).select("category,content");
+    if(error){console.error(error);readErr="Couldn’t read resume_data: "+error.message}
+    else (data||[]).forEach(r=>{
+      let c=r.content; if(typeof c==="string"){try{c=JSON.parse(c)}catch(e){}}
+      if(r.category==="section_visibility") vis=(c&&typeof c==="object"&&!Array.isArray(c))?c:{};
+      else if(r.category==="header"||KEYS.includes(r.category)) R[r.category]=normCat(r.category,c);
+    });
   }
-  if(error||needsSeed){rrows=DEFAULT_RESUME;rFallback=true}
-  else{rrows=content;rFallback=false}
   renderResume();
   if(isAdmin) verifyPublic();
 }
-async function seedDefaults(){
-  if(seeding) return false; seeding=true;
-  const rows=[...DEFAULT_RESUME.map((r,i)=>({...r,sort_order:i+1})),{category:"meta",title:"seeded",sort_order:0}];
-  const res=await dbw(sb.from(RT).insert(rows).select()); seeding=false;
-  if(res.error){readErr="Couldn’t create the default resume rows: "+res.error;return false}
-  return true;
-}
  
-/* does a logged-out visitor really see what the admin saved? (uses a separate anonymous client) */
+/* does a logged-out visitor really see what the admin saved? (separate anonymous client) */
 let pubClient=null, pubTimer=0;
 function verifyPublic(){
   clearTimeout(pubTimer);
@@ -950,12 +996,12 @@ function verifyPublic(){
     let msg="";
     try{
       pubClient=pubClient||supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
-      const {data,error}=await pubClient.from(RT).select("category,title,subtitle");
+      const {data,error}=await pubClient.from(RT).select("category,content");
       if(error||!data) msg="⚠ Visitors can’t read resume_data"+(error?" ("+error.message+")":"")+", so they see the default resume and hidden sections still show. Run the SQL policy fix.";
       else{
-        const seen={}; data.filter(r=>r.category==="section_visibility").forEach(r=>{seen[r.title]=r.subtitle==="hidden"});
-        const bad=Object.keys(vis).filter(k=>!!vis[k].hidden!==!!seen[k]);
-        if(!rFallback&&!data.some(r=>CATKEYS.includes(r.category))) msg="⚠ Visitors see no resume rows. Add a public read policy on resume_data.";
+        const v=data.find(r=>r.category==="section_visibility"); let seen=v?v.content:{}; if(typeof seen==="string"){try{seen=JSON.parse(seen)}catch(e){seen={}}} seen=seen||{};
+        const bad=RCATS.filter(c=>!!vis[c.key]!==!!seen[c.key]);
+        if(!data.length) msg="ℹ Nothing is saved yet, so visitors see the default resume. Edit something and Save.";
         else if(bad.length) msg="⚠ Visitors don’t see your latest hide/show settings yet.";
         else msg="✓ Visitors see exactly what you saved.";
       }
@@ -964,55 +1010,52 @@ function verifyPublic(){
   },300);
 }
  
-/* admin: show / hide a whole section */
+/* ---- section visibility (stored as category "section_visibility": {education:true,...}) ---- */
 async function toggleSection(key){
   if(!sb||!isAdmin) return;
-  const prev=vis[key], hide=!(prev&&prev.hidden), v=hide?"hidden":"visible";
-  vis[key]={...(prev||{}),hidden:hide}; renderResume();           // instant feedback
-  const res=prev&&prev.id
-    ? await dbw(sb.from(RT).update({subtitle:v}).eq("id",prev.id).select())
-    : await dbw(sb.from(RT).insert({category:"section_visibility",title:key,subtitle:v,sort_order:0}).select());
-  if(res.error){ if(prev) vis[key]=prev; else delete vis[key]; renderResume(); toast("Couldn’t change visibility: "+res.error); return }
-  vis[key].id=res.data[0].id;
-  toast(hide?"Section hidden from visitors":"Section visible to visitors again");
+  const was=!!vis[key]; vis[key]=!was; if(!vis[key]) delete vis[key];
+  renderResume();                                         // instant feedback
+  const res=await persist("section_visibility");
+  if(res.error){ if(was) vis[key]=true; else delete vis[key]; renderResume(); toast("Couldn’t change visibility: "+res.error); return }
+  toast(was?"Section visible to visitors again":"Section hidden from visitors");
   verifyPublic();
 }
  
-/* admin: add / delete items (text is edited inline, then Save changes) */
-const rdlg=$("rdlg"), rform=$("rform"), rfields=$("rfields"), rerr=$("rerr"), rsave=$("rsave"); let addCat=null;
-function openAdd(key){
+/* ---- add / edit dialog (same pattern as “Add a skill”) ---- */
+const rdlg=$("rdlg"), rform=$("rform"), rfields=$("rfields"), rerr=$("rerr"), rsave=$("rsave"); let formCat=null, formItem=null;
+function openForm(key,item){
   if(!canEdit()) return;
-  addCat=RCATS.find(c=>c.key===key); rerr.textContent="";
-  $("rdlg-title").textContent=addCat.dlg; rsave.textContent=addCat.dlg.replace(/^Add (an? )?/,"Add ");
+  formCat=RCATS.find(c=>c.key===key); formItem=item||null; rerr.textContent="";
+  $("rdlg-title").textContent=(item?"Edit ":"Add ")+formCat.noun; rsave.textContent=item?"Save":"Add";
   rfields.innerHTML="";
-  addCat.f.forEach(([f,label,ph,req,area])=>{
+  formCat.f.forEach(([f,label,ph,req,area])=>{
     const l=document.createElement("label"), i=document.createElement(area?"textarea":"input");
     if(!area) i.type="text"; i.name=f; i.placeholder=ph||""; i.required=!!req; i.maxLength=area?800:(f==="tags"||f==="learning"?300:160);
-    l.append(label+(req?" *":""),i); rfields.append(l);
+    i.value=item?(item[f]||""):""; l.append(label+(req?" *":""),i); rfields.append(l);
   });
-  rform.reset(); rdlg.showModal(); rfields.querySelector("input,textarea").focus();
+  rdlg.showModal(); rfields.querySelector("input,textarea").focus();
 }
 rform.addEventListener("submit",async e=>{
-  e.preventDefault(); if(!canEdit()||!addCat) return;
-  const row={category:addCat.key,sort_order:rrows.reduce((m,x)=>Math.max(m,x.sort_order||0),0)+1};
-  addCat.f.forEach(([f])=>{let v=rform.elements[f].value.trim(); if(f==="tags"||f==="learning") v=csv(v).join(", "); row[f]=v});
-  if(!row.title){rerr.textContent="Please fill in the required field.";return}
+  e.preventDefault(); if(!canEdit()||!formCat) return;
+  const vals={}; formCat.f.forEach(([f])=>{let v=rform.elements[f].value.trim(); if(f==="tags"||f==="learning") v=csv(v).join(", "); vals[f]=v});
+  if(!vals.title){rerr.textContent="Please fill in the required field.";return}
+  const arr=R[formCat.key], editing=formItem, snap=editing?{...editing}:null;
+  const target=editing||normItem(formCat,{});
+  Object.assign(target,vals); if(!editing) arr.push(target);
   rsave.disabled=true; rerr.textContent="";
-  const res=await dbw(sb.from(RT).insert(row).select());
+  const res=await persist(formCat.key);
   rsave.disabled=false;
-  if(res.error){rerr.textContent="Couldn’t save: "+res.error;return}
-  rdlg.close(); rrows.push(res.data[0]); flashId=res.data[0].id; renderResume(); toast("Added “"+row.title+"”");
+  if(res.error){ if(editing) Object.assign(editing,snap); else arr.pop(); rerr.textContent="Couldn’t save: "+res.error; return }
+  rdlg.close(); flashItem=target; renderResume(); toast(editing?"Saved “"+vals.title+"”":"Added “"+vals.title+"”");
 });
-async function removeRow(r){
-  if(!confirm(`Delete “${val(r,"title")||"this item"}”?`)) return;
-  const res=await dbw(sb.from(RT).delete().eq("id",r.id).select());
-  if(res.error){toast("Couldn’t delete: "+res.error);return}
-  rrows=rrows.filter(x=>x!==r); delete dirty[r.id]; delete tagState[r.id]; dirtyNote(); renderResume(); toast("Item deleted");
+async function removeItem(key,item){
+  const arr=R[key], i=arr.indexOf(item); if(i<0) return;
+  if(!confirm(`Delete “${item.title||"this item"}”?`)) return;
+  arr.splice(i,1); renderResume();
+  const res=await persist(key);
+  if(res.error){arr.splice(i,0,item);renderResume();toast("Couldn’t delete: "+res.error);return}
+  toast("Deleted");
 }
-$("importresume").onclick=async()=>{
-  if(!sb||!isAdmin) return;
-  if(await seedDefaults()){toast("Default resume imported");loadResume()} else renderResume();
-};
 $("previewbtn").onclick=()=>{
   preview=!preview; document.body.classList.toggle("preview",preview);
   $("previewbtn").textContent=preview?"Exit preview":"Preview as visitor"; renderResume();

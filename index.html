@@ -137,6 +137,7 @@ body.admin .redit:focus{outline:2px solid var(--g2);background:var(--glow)}
 .addmini{border:1px dashed var(--g2);background:transparent;color:var(--ink);border-radius:999px;padding:2px 12px;font:600 .8rem var(--font);cursor:pointer}
 .addmini:hover{background:var(--soft)}
 .rctl{display:inline-flex;gap:4px;flex:none}
+.redit.saving{opacity:.6}
 body.preview .admin-only:not(.adminbar){display:none!important}
 body.preview [data-edit]{outline:none!important}
 .tagbox{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -364,7 +365,7 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
   <section id="resume"><div class="wrap">
     <h2>Resume &amp; background</h2>
     <p class="lead">Where I study, what I build with and what I’m still learning.</p>
- 
+
     <header class="rhead">
       <div class="rtop">
         <div>
@@ -379,10 +380,10 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
       <ul class="rcontact" id="hcontact"></ul>
       <div class="rlinks" id="rlinks"></div>
     </header>
- 
+
     <div id="rbody"></div>
   </div></section>
- 
+
   <section id="contact" class="contact"><div class="wrap">
     <h2>Let’s build something</h2>
     <p class="lead" data-edit="contact_lead">Questions, ideas or opportunities are all welcome.</p>
@@ -395,7 +396,7 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
 </main>
 <footer>© <span id="year"></span> Nirmit Nepal</footer>
  
-<div class="adminbar admin-only"><span>Admin mode · click any dashed text to edit</span><span class="abnote" id="abnote" hidden></span><span class="abnote" id="pubnote" hidden></span><span class="abnote" id="dirtynote" hidden></span><button class="pill" id="previewbtn">Preview as visitor</button><button class="pill" id="savetext">Save changes</button></div>
+<div class="adminbar admin-only"><span>Admin mode · click dashed text to edit (resume changes save instantly)</span><span class="abnote" id="abnote" hidden></span><span class="abnote" id="pubnote" hidden></span><button class="pill" id="previewbtn">Preview as visitor</button><button class="pill" id="savetext">Save page text</button></div>
  
 <dialog id="dlg">
   <form id="form">
@@ -425,7 +426,7 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
     <div class="actions"><button type="button" class="pill" data-close>Cancel</button><button class="btn" id="rsave">Add</button></div>
   </form>
 </dialog>
- 
+
 <dialog id="ldlg">
   <form id="lform">
     <h3>Admin login</h3>
@@ -565,17 +566,14 @@ $("savetext").onclick=async()=>{
   if(!sb||!isAdmin) return;
   const btn=$("savetext"); btn.disabled=true;
   const rows=[...document.querySelectorAll("[data-edit]")].map(el=>({key:el.dataset.edit,value:el.textContent.trim()}));
-  const t=await sb.from("site_content").upsert(rows);
-  let failed=t.error?t.error.message:"";
-  for(const key of [...dirty]){
-    const r=await persist(key);
-    if(r.error) failed=r.error;
-  }
+  const {error}=await sb.from("site_content").upsert(rows);
   btn.disabled=false;
-  toast(failed?"Couldn’t save: "+failed:"Changes saved");
+  if(error){alert(error.message);return}
+  toast("Page text saved");
 };
- 
- 
+
+
+
  
 /* ====== Auth ====== */
 function setAdmin(on){
@@ -585,7 +583,7 @@ function setAdmin(on){
   if(skills.length) view();
   try{
     if(!on&&preview){preview=false;document.body.classList.remove("preview");$("previewbtn").textContent="Preview as visitor"}
-    renderResume(); if(on) verifyPublic();
+    renderResume(); if(on){ if(tableEmpty) seedDefaults(); verifyPublic(); }
   }catch(e){}
 }
 const ldlg=$("ldlg"), lform=$("lform");
@@ -726,7 +724,8 @@ RLINKS.forEach(l=>{
   const a=document.createElement("a"); a.className="chip sm"; a.href=l.url; a.target="_blank"; a.rel="noopener noreferrer";
   a.innerHTML=svgIcon(l.icon); const t=document.createElement("span"); t.textContent=l.label; a.append(t); $("rlinks").append(a);
 });
-/* Table shape: resume_data(category text unique, content jsonb). One row per section; the whole section is saved with upsert. */
+/* Table shape: resume_data(category text unique, content jsonb, is_visible boolean). One row per section.
+   Every change is saved with upsert(..., {onConflict:"category"}) and only applied locally after Supabase confirms. */
 const RT="resume_data";
 const RCATS=[
   {key:"education",title:"Education",add:"+ Add Education",noun:"education",f:[["title","Institution","e.g. B.M.S. Institute of Technology and Management",1],["subtitle","Degree / programme","e.g. B.E. / B.Tech in CSE"],["period","Timeline / years","e.g. 2026 – 2030"],["location","Location","City, country"]]},
@@ -758,14 +757,14 @@ const DEFAULTS={
   certifications:[{title:"--"}],
   extracurriculars:[{title:"Coding Platforms",details:"--"},{title:"Clubs & Societies",details:"--"},{title:"Competitions & Events",details:"--"}]
 };
- 
-/* ---- state ---- */
-let R={}, vis={}, readErr="", preview=false, flashItem=null;
-const dirty=new Set();
+
+/* ---- state (always rebuilt from the database on load) ---- */
+let R={}, hidden={}, readErr="", preview=false, flashId=null, pending=0, tableEmpty=false;
 const adm=()=>isAdmin&&!preview;
 const canEdit=()=>!!(adm()&&sb);
 const clone=o=>JSON.parse(JSON.stringify(o));
- 
+const uid=()=>Math.random().toString(36).slice(2,10);
+
 /* ---- normalising whatever is stored (accepts older / differently named fields) ---- */
 const AL={title:["title","institution","name","school","project","language","course","group"],subtitle:["subtitle","degree","program","programme","level","issuer","platform"],period:["period","years","timeline","date","year"],location:["location"],tags:["tags","tech_stack","techStack","stack","technologies","skills","items"],learning:["learning"],details:["details","description","desc","notes"]};
 const pick=(o,names)=>{for(const n of names){const v=o[n];if(v!=null&&v!=="") return Array.isArray(v)?v.join(", "):String(v)}return ""};
@@ -775,7 +774,8 @@ function normItem(cat,x){
     x=m?{title:m[1],subtitle:m[2]}:{title:x};
   }
   if(!x||typeof x!=="object") x={};
-  const o={}; cat.f.forEach(([f])=>{o[f]=pick(x,AL[f]||[f])}); return o;
+  const fs=cat.f.map(z=>z[0]); if(fs.includes("tags")&&!fs.includes("learning")) fs.push("learning");   // dimmed tags are kept for projects too
+  const o={id:x.id||uid()}; fs.forEach(f=>{o[f]=pick(x,AL[f]||[f])}); return o;
 }
 function normCat(key,c){
   if(typeof c==="string"){try{c=JSON.parse(c)}catch(e){}}
@@ -787,41 +787,66 @@ function normCat(key,c){
   const cat=RCATS.find(k=>k.key===key);
   return Array.isArray(c)?c.map(x=>normItem(cat,x)):clone(DEFAULTS[key]).map(x=>normItem(cat,x));
 }
- 
+
 /* ---- tiny DOM helpers ---- */
 function setTxt(e,t){e.textContent=t; if((t||"").trim()==="--") e.classList.add("ph")}
 function mk(tag,cls,txt){const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) setTxt(e,txt); return e}
 const put=(p,...c)=>{c.forEach(x=>{if(x) p.append(x)});return p};
 const csv=v=>(v||"").split(",").map(x=>x.trim()).filter(Boolean);
-const elOf=new WeakMap();
-const ri=(tag,cls,item)=>{const e=mk(tag,cls);elOf.set(item,e);return e};
+const ri=(tag,cls,item)=>{const e=mk(tag,cls);e.dataset.id=item.id;return e};
 function selectAll(el){const r=document.createRange();r.selectNodeContents(el);const g=getSelection();g.removeAllRanges();g.addRange(r)}
-function dirtyNote(){const n=dirty.size,e=$("dirtynote");e.hidden=!n;e.textContent="● "+n+" unsaved"}
-const markDirty=k=>{dirty.add(k);dirtyNote()};
-addEventListener("beforeunload",e=>{if(dirty.size){e.preventDefault();e.returnValue=""}});
- 
-/* ---- database: every change is an upsert of the whole section, and we verify a row really came back ---- */
+addEventListener("beforeunload",e=>{if(pending){e.preventDefault();e.returnValue=""}});
+function fail(msg){
+  alert(msg+(/is_visible/.test(msg)?"\n\nAdd the column in Supabase:\nalter table resume_data add column if not exists is_visible boolean default true;":""));
+}
+
+/* ---- database ---- */
 async function dbw(q){
   const {data,error}=await q;
   if(error) return {error:error.message};
-  if(!data||!data.length) return {error:"blocked by database permissions (check your RLS policies)"};
+  if(!data||!data.length) return {error:"The database refused the change (blocked by permissions / RLS)."};
   return {data};
 }
-async function persist(key){
-  const content=key==="section_visibility"?vis:R[key];
-  const res=await dbw(sb.from(RT).upsert({category:key,content},{onConflict:"category"}).select());
-  if(!res.error){dirty.delete(key);dirtyNote()}
-  return res;
+/* Save one section: the change is applied to a COPY, upserted, and only after Supabase confirms does it become the local state.
+   Saves of the same section run one after another so they can never overwrite each other. */
+const chain={};
+function saveSection(key,mutate,hide){
+  const run=async()=>{
+    pending++;
+    try{
+      const next=clone(R[key]); mutate(next);
+      const hv=hide===undefined?!!hidden[key]:hide;
+      const res=await dbw(sb.from(RT).upsert({category:key,content:next,is_visible:!hv},{onConflict:"category"}).select());
+      if(res.error) return {error:res.error};
+      R[key]=next; if(hv) hidden[key]=true; else delete hidden[key];
+      return {ok:true};
+    }catch(e){return {error:e.message||String(e)}}
+    finally{pending--}
+  };
+  const p=(chain[key]||Promise.resolve()).then(run,run); chain[key]=p; return p;
 }
- 
-/* ---- inline-editable text: dashed + contenteditable for the admin, plain text (or nothing if empty) for visitors ---- */
+function setField(next,key,obj,f,v){
+  if(key==="header"){ if(Array.isArray(obj)) next.phones[f]=v; else next[f]=v; return }
+  const it=next.find(x=>x.id===obj.id); if(it) it[f]=v;
+}
+
+/* ---- inline-editable text: saved to Supabase when you leave the field ---- */
 function ed(tag,cls,key,obj,f,ph){
   const v=obj[f]||"";
   if(!canEdit()){ if(!v) return null; return mk(tag,cls,v) }
   const e=mk(tag,cls,v); e.classList.add("redit"); e.contentEditable="true"; e.spellcheck=false; e.dataset.ph=ph;
-  e.addEventListener("input",()=>{const t=e.textContent.trim();obj[f]=t;e.classList.toggle("ph",t==="--");markDirty(key)});
+  let saved=v;
+  e.addEventListener("input",()=>e.classList.toggle("ph",e.textContent.trim()==="--"));
   e.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();e.blur()}});
   e.addEventListener("paste",ev=>{ev.preventDefault();document.execCommand("insertText",false,(ev.clipboardData.getData("text/plain")||"").replace(/\s*\n\s*/g," "))});
+  e.addEventListener("blur",async()=>{
+    const nv=e.textContent.trim(); if(nv===saved) return;
+    e.classList.add("saving");
+    const res=await saveSection(key,next=>setField(next,key,obj,f,nv));
+    e.classList.remove("saving");
+    if(res.error){fail(res.error);e.textContent=saved;e.classList.toggle("ph",saved==="--");return}
+    saved=nv; toast("Saved");
+  });
   return e;
 }
 function iconBtn(txt,label,fn){const b=mk("button","icon-btn sm admin-only",txt);b.type="button";b.title=label;b.setAttribute("aria-label",label);b.onclick=fn;return b}
@@ -833,46 +858,53 @@ function ctl(key,item,onlyDelete){
   return c;
 }
 const chips=(csvStr,cls)=>csv(csvStr).map(x=>mk("span",cls||"tag",x));
- 
+
 /* chip editor for Technical skills + Projects: click = dim / undim, double-click = rename, × = remove, input = add */
 function tagBox(key,item,cls){
   const box=mk("div","tagbox"+(cls?" "+cls:""));
-  const it=[...csv(item.tags).map(t=>({t,learn:false})),...csv(item.learning).map(t=>({t,learn:true}))];
-  const commit=()=>{it.sort((a,b)=>a.learn-b.learn);item.tags=it.filter(x=>!x.learn).map(x=>x.t).join(", ");item.learning=it.filter(x=>x.learn).map(x=>x.t).join(", ");markDirty(key)};
+  const read=o=>[...csv(o.tags).map(t=>({t,learn:false})),...csv(o.learning).map(t=>({t,learn:true}))];
+  let it=read(item);
+  const commit=async()=>{
+    it.sort((a,b)=>a.learn-b.learn);
+    const tags=it.filter(x=>!x.learn).map(x=>x.t).join(", "), learning=it.filter(x=>x.learn).map(x=>x.t).join(", ");
+    const res=await saveSection(key,next=>{const t=next.find(x=>x.id===item.id);if(t){t.tags=tags;t.learning=learning}});
+    if(res.error){fail(res.error);const cur=R[key].find(x=>x.id===item.id)||item;it=read(cur);paint();return}
+    toast("Saved");
+  };
   const paint=focusAdd=>{
     box.innerHTML="";
     it.forEach(item2=>{
       const c=mk("span","tag chip-ed"+(item2.learn?" learn":"")), tx=mk("span","tx",item2.t);
       tx.title="Click: dim / undim · double-click: rename";
-      tx.onclick=()=>{clearTimeout(tx.t);tx.t=setTimeout(()=>{item2.learn=!item2.learn;commit();paint()},220)};
+      tx.onclick=()=>{clearTimeout(tx.t);tx.t=setTimeout(()=>{item2.learn=!item2.learn;paint();commit()},220)};
       tx.ondblclick=()=>{
         clearTimeout(tx.t); tx.contentEditable="true"; tx.focus(); selectAll(tx);
         const done=ok=>{
           tx.onblur=null; tx.contentEditable="false";
           const v=tx.textContent.replace(/,/g," ").trim();
-          if(ok&&v!==item2.t){ if(v) item2.t=v; else it.splice(it.indexOf(item2),1); commit() }
+          if(ok&&v!==item2.t){ if(v) item2.t=v; else it.splice(it.indexOf(item2),1); paint(); commit(); return }
           paint();
         };
         tx.onblur=()=>done(true);
         tx.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();done(true)}else if(e.key==="Escape"){e.preventDefault();done(false)}};
       };
       const x=mk("button","x","×"); x.type="button"; x.title="Remove";
-      x.onclick=()=>{it.splice(it.indexOf(item2),1);commit();paint()};
+      x.onclick=()=>{it.splice(it.indexOf(item2),1);paint();commit()};
       c.append(tx,x); box.append(c);
     });
     const inp=document.createElement("input"); inp.className="tag-add"; inp.placeholder="+ add"; inp.maxLength=40; inp.setAttribute("aria-label","Add a tag");
     const add=()=>{
       const parts=inp.value.split(",").map(v=>v.trim()).filter(Boolean); inp.value="";
       if(!parts.length) return false;
-      parts.forEach(t=>it.push({t,learn:false})); commit(); return true;
+      parts.forEach(t=>it.push({t,learn:false})); return true;
     };
-    inp.onkeydown=e=>{if(e.key==="Enter"||e.key===","){e.preventDefault();if(add()) paint(true)}};
-    inp.onblur=()=>{if(add()) paint()};
+    inp.onkeydown=e=>{if(e.key==="Enter"||e.key===","){e.preventDefault();if(add()){paint(true);commit()}}};
+    inp.onblur=()=>{if(add()){paint();commit()}};
     box.append(inp); if(focusAdd) inp.focus();
   };
   paint(); return box;
 }
- 
+
 /* ---- section builders ---- */
 const BUILD={
   education:(items,K)=>{const ol=mk("ol","r-edu");items.forEach(r=>{
@@ -912,8 +944,8 @@ const BUILD={
     x.append(put(mk("div","hrow"),ed("h4",null,K,r,"title","Group (e.g. Clubs & Societies)"),ctl(K,r)));
     put(x,ed("p",null,K,r,"details","Details")); g.append(x)});return g}
 };
- 
-/* ---- header & contact info (stored as category "header") ---- */
+
+/* ---- header & contact info (category "header") ---- */
 function renderHeader(){
   const h=R.header, K="header";
   const name=$("hname"), role=$("hrole"), ul=$("hcontact");
@@ -928,33 +960,41 @@ function renderHeader(){
   h.phones.forEach((n,i)=>{
     if(canEdit()){
       const w=mk("span","ph1"); w.append(ed("span",null,K,h.phones,i,"phone"));
-      w.append(iconBtn("🗑️","Remove phone number",()=>{h.phones.splice(i,1);markDirty(K);renderHeader()}));
+      w.append(iconBtn("🗑️","Remove phone number",async()=>{
+        const res=await saveSection(K,next=>{next.phones.splice(i,1)});
+        if(res.error){fail(res.error);return}
+        renderHeader(); toast("Phone removed");
+      }));
       ph.append(w);
     }else if(n){const a=document.createElement("a");a.href="tel:"+n.replace(/[^\d+]/g,"");a.textContent=n;ph.append(a)}
   });
-  if(canEdit()){const b=mk("button","addmini admin-only","+ phone");b.type="button";b.onclick=()=>{h.phones.push("");markDirty(K);renderHeader();const els=$("hcontact").querySelectorAll(".ph1 .redit");if(els.length) els[els.length-1].focus()};ph.append(b)}
+  if(canEdit()){const b=mk("button","addmini admin-only","+ phone");b.type="button";b.onclick=async()=>{
+    const res=await saveSection(K,next=>{next.phones.push("")});
+    if(res.error){fail(res.error);return}
+    renderHeader(); const els=$("hcontact").querySelectorAll(".ph1 .redit"); if(els.length) els[els.length-1].focus();
+  };ph.append(b)}
   li("Phone",ph);
   li("Location",ed("span",null,K,h,"location","City, region, country"));
 }
- 
+
 /* ---- the whole resume ---- */
 function renderResume(){
   if(!R.header) return;
   renderHeader();
   const box=$("rbody"); box.innerHTML="";
   RCATS.forEach(cat=>{
-    const hidden=!!vis[cat.key];
-    if(hidden&&!adm()) return;                         // visitors never see hidden sections
+    const isHidden=!!hidden[cat.key];
+    if(isHidden&&!adm()) return;                       // visitors never see hidden (is_visible = false) sections
     const items=R[cat.key];
-    const sec=mk("div","rsec"+(items.length?"":" empty")+(hidden?" is-hidden":""));
+    const sec=mk("div","rsec"+(items.length?"":" empty")+(isHidden?" is-hidden":""));
     if(cat.key==="education") sec.id="education-list";
     const head=mk("div","rsec-head"), left=mk("div","rsec-title");
     left.append(mk("h3",null,cat.title));
-    const eye=mk("button","eye admin-only",hidden?"🙈":"👁️"); eye.type="button";
-    eye.title=hidden?"Hidden from visitors. Click to show":"Visible to visitors. Click to hide";
+    const eye=mk("button","eye admin-only",isHidden?"🙈":"👁️"); eye.type="button";
+    eye.title=isHidden?"Hidden from visitors. Click to show":"Visible to visitors. Click to hide";
     eye.setAttribute("aria-label",eye.title); eye.onclick=()=>toggleSection(cat.key);
     left.append(eye);
-    if(hidden) left.append(mk("span","hbadge admin-only","Hidden from public"));
+    if(isHidden) left.append(mk("span","hbadge admin-only","Hidden from public"));
     head.append(left);
     if(canEdit()){const add=mk("button","pill admin-only",cat.add);add.type="button";add.onclick=()=>openForm(cat.key);head.append(add)}
     sec.append(head);
@@ -964,29 +1004,44 @@ function renderResume(){
     sec.append(body); box.append(sec);
   });
   $("abnote").hidden=!readErr; $("abnote").textContent=readErr;
-  if(flashItem){
-    const el=elOf.get(flashItem);
+  if(flashId){
+    const el=box.querySelector(`.ritem[data-id="${flashId}"]`);
     if(el){el.scrollIntoView({block:"center",behavior:"smooth"});el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),2000)}
-    flashItem=null;
+    flashId=null;
   }
 }
- 
+
+/* ---- load fresh data from Supabase on every page load ---- */
 async function loadResume(){
-  R=clone(DEFAULTS); vis={}; readErr="";
-  KEYS.forEach(k=>{R[k]=normCat(k,R[k])});
+  R={}; hidden={}; readErr=""; tableEmpty=false;
+  R.header=normCat("header",null); KEYS.forEach(k=>{R[k]=normCat(k,null)});      // fallback only until the database answers
   if(sb){
-    const {data,error}=await sb.from(RT).select("category,content");
+    const {data,error}=await sb.from(RT).select("*");
     if(error){console.error(error);readErr="Couldn’t read resume_data: "+error.message}
-    else (data||[]).forEach(r=>{
-      let c=r.content; if(typeof c==="string"){try{c=JSON.parse(c)}catch(e){}}
-      if(r.category==="section_visibility") vis=(c&&typeof c==="object"&&!Array.isArray(c))?c:{};
-      else if(r.category==="header"||KEYS.includes(r.category)) R[r.category]=normCat(r.category,c);
-    });
+    else{
+      tableEmpty=!data.length;
+      data.forEach(r=>{
+        if(r.category!=="header"&&!KEYS.includes(r.category)) return;
+        R[r.category]=normCat(r.category,r.content);
+        if(r.is_visible===false) hidden[r.category]=true;
+      });
+    }
   }
   renderResume();
-  if(isAdmin) verifyPublic();
+  if(isAdmin){ if(tableEmpty) seedDefaults(); verifyPublic(); }
 }
- 
+/* brand-new empty table: store the starting resume once so everything afterwards comes from the database */
+let seeding=false;
+async function seedDefaults(){
+  if(!sb||!isAdmin||seeding||!tableEmpty) return; seeding=true;
+  const rows=[{category:"header",content:R.header,is_visible:true},...KEYS.map(k=>({category:k,content:R[k],is_visible:!hidden[k]}))];
+  const res=await dbw(sb.from(RT).upsert(rows,{onConflict:"category"}).select());
+  seeding=false;
+  if(res.error){fail("Couldn’t create the initial resume rows: "+res.error);return}
+  tableEmpty=false; toast("Resume saved to the database");
+}
+if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",loadResume); else loadResume();
+
 /* does a logged-out visitor really see what the admin saved? (separate anonymous client) */
 let pubClient=null, pubTimer=0;
 function verifyPublic(){
@@ -996,12 +1051,12 @@ function verifyPublic(){
     let msg="";
     try{
       pubClient=pubClient||supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
-      const {data,error}=await pubClient.from(RT).select("category,content");
-      if(error||!data) msg="⚠ Visitors can’t read resume_data"+(error?" ("+error.message+")":"")+", so they see the default resume and hidden sections still show. Run the SQL policy fix.";
+      const {data,error}=await pubClient.from(RT).select("category,is_visible");
+      if(error||!data) msg="⚠ Visitors can’t read resume_data"+(error?" ("+error.message+")":"")+", so they see the default resume. Run the SQL policy fix.";
       else{
-        const v=data.find(r=>r.category==="section_visibility"); let seen=v?v.content:{}; if(typeof seen==="string"){try{seen=JSON.parse(seen)}catch(e){seen={}}} seen=seen||{};
-        const bad=RCATS.filter(c=>!!vis[c.key]!==!!seen[c.key]);
-        if(!data.length) msg="ℹ Nothing is saved yet, so visitors see the default resume. Edit something and Save.";
+        const seen={}; data.forEach(r=>{seen[r.category]=r.is_visible===false});
+        const bad=RCATS.filter(c=>!!hidden[c.key]!==!!seen[c.key]);
+        if(!data.length) msg="ℹ Nothing is saved yet, so visitors see the default resume.";
         else if(bad.length) msg="⚠ Visitors don’t see your latest hide/show settings yet.";
         else msg="✓ Visitors see exactly what you saved.";
       }
@@ -1009,18 +1064,16 @@ function verifyPublic(){
     el.textContent=msg; el.hidden=!msg;
   },300);
 }
- 
-/* ---- section visibility (stored as category "section_visibility": {education:true,...}) ---- */
+
+/* ---- section visibility (is_visible column) ---- */
 async function toggleSection(key){
   if(!sb||!isAdmin) return;
-  const was=!!vis[key]; vis[key]=!was; if(!vis[key]) delete vis[key];
-  renderResume();                                         // instant feedback
-  const res=await persist("section_visibility");
-  if(res.error){ if(was) vis[key]=true; else delete vis[key]; renderResume(); toast("Couldn’t change visibility: "+res.error); return }
-  toast(was?"Section visible to visitors again":"Section hidden from visitors");
-  verifyPublic();
+  const hide=!hidden[key];
+  const res=await saveSection(key,()=>{},hide);          // waits for Supabase before the UI changes
+  if(res.error){fail(res.error);return}
+  renderResume(); toast(hide?"Section hidden from visitors":"Section visible to visitors again"); verifyPublic();
 }
- 
+
 /* ---- add / edit dialog (same pattern as “Add a skill”) ---- */
 const rdlg=$("rdlg"), rform=$("rform"), rfields=$("rfields"), rerr=$("rerr"), rsave=$("rsave"); let formCat=null, formItem=null;
 function openForm(key,item){
@@ -1039,28 +1092,27 @@ rform.addEventListener("submit",async e=>{
   e.preventDefault(); if(!canEdit()||!formCat) return;
   const vals={}; formCat.f.forEach(([f])=>{let v=rform.elements[f].value.trim(); if(f==="tags"||f==="learning") v=csv(v).join(", "); vals[f]=v});
   if(!vals.title){rerr.textContent="Please fill in the required field.";return}
-  const arr=R[formCat.key], editing=formItem, snap=editing?{...editing}:null;
-  const target=editing||normItem(formCat,{});
-  Object.assign(target,vals); if(!editing) arr.push(target);
+  const key=formCat.key, editing=formItem, id=editing?editing.id:uid();
   rsave.disabled=true; rerr.textContent="";
-  const res=await persist(formCat.key);
+  const res=await saveSection(key,next=>{
+    if(editing){const t=next.find(x=>x.id===id); if(t) Object.assign(t,vals)}
+    else next.push({id,...vals});
+  });
   rsave.disabled=false;
-  if(res.error){ if(editing) Object.assign(editing,snap); else arr.pop(); rerr.textContent="Couldn’t save: "+res.error; return }
-  rdlg.close(); flashItem=target; renderResume(); toast(editing?"Saved “"+vals.title+"”":"Added “"+vals.title+"”");
+  if(res.error){rerr.textContent="Couldn’t save: "+res.error;fail(res.error);return}
+  rdlg.close(); flashId=id; renderResume(); toast(editing?"Saved “"+vals.title+"”":"Added “"+vals.title+"”");
 });
 async function removeItem(key,item){
-  const arr=R[key], i=arr.indexOf(item); if(i<0) return;
   if(!confirm(`Delete “${item.title||"this item"}”?`)) return;
-  arr.splice(i,1); renderResume();
-  const res=await persist(key);
-  if(res.error){arr.splice(i,0,item);renderResume();toast("Couldn’t delete: "+res.error);return}
-  toast("Deleted");
+  const res=await saveSection(key,next=>{const i=next.findIndex(x=>x.id===item.id);if(i>-1) next.splice(i,1)});
+  if(res.error){fail(res.error);return}
+  renderResume(); toast("Deleted");
 }
 $("previewbtn").onclick=()=>{
   preview=!preview; document.body.classList.toggle("preview",preview);
   $("previewbtn").textContent=preview?"Exit preview":"Preview as visitor"; renderResume();
 };
- 
+
 /* theme + scroll */
 const root=document.documentElement; let saved=null; try{saved=localStorage.getItem("theme")}catch(e){}
 root.dataset.theme=saved||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");
@@ -1068,7 +1120,7 @@ $("theme").onclick=()=>{root.dataset.theme=root.dataset.theme==="dark"?"light":"
 addEventListener("scroll",()=>{const h=document.documentElement;$("progress").style.transform=`scaleX(${h.scrollTop/(h.scrollHeight-h.clientHeight||1)})`},{passive:true});
 $("year").textContent=new Date().getFullYear();
  
-loadSkills(); loadContent(); loadLinks(); loadResume();
+loadSkills(); loadContent(); loadLinks();
 </script>
 </body>
 </html>

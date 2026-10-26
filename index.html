@@ -131,7 +131,19 @@ body.admin .redit:focus{outline:2px solid var(--g2);background:var(--glow)}
 .tline .redit{flex:1;width:auto}
 .meta{display:flex;flex-wrap:wrap;gap:4px 14px}
 .meta small{color:var(--muted);font-size:.9rem}
-.abnote{font-size:.85rem;opacity:.85}
+.abnote{font-size:.85rem;opacity:.9;max-width:340px;line-height:1.35}
+body.preview .admin-only:not(.adminbar){display:none!important}
+body.preview [data-edit]{outline:none!important}
+.tagbox{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tag.chip-ed{display:inline-flex;align-items:center;gap:4px;padding-right:6px;cursor:pointer;user-select:none;transition:background .2s,border-color .2s,color .2s}
+.tag.chip-ed:hover{border-color:var(--g2)}
+.tag.chip-ed .tx[contenteditable=true]{user-select:text;cursor:text;outline:2px solid var(--g2);border-radius:6px;padding:0 4px;background:var(--glow)}
+.tag.chip-ed .x{border:0;background:transparent;color:inherit;opacity:.5;cursor:pointer;font-size:.95rem;line-height:1;padding:2px 5px;border-radius:50%}
+.tag.chip-ed .x:hover{opacity:1;background:color-mix(in srgb,var(--g2) 25%,transparent)}
+.tag-add{border:1px dashed var(--g2);background:transparent;color:var(--ink);border-radius:999px;padding:4px 14px;font:inherit;font-size:.88rem;width:120px;max-width:100%}
+.tag-add:focus{outline:none;box-shadow:0 0 0 3px var(--glow)}
+.tagbox.sm .tag{font-size:.8rem;padding:2px 8px 2px 11px}
+.thint{color:var(--muted);font-size:.85rem;margin:14px 0 0}
 .r-edu{list-style:none;margin:0;padding:0 0 0 26px;position:relative;display:grid;gap:26px}
 .r-edu::before{content:"";position:absolute;left:5px;top:8px;bottom:8px;width:2px;background:linear-gradient(var(--g2),var(--line))}
 .r-edu li{display:grid;grid-template-columns:140px 1fr;gap:4px 24px}
@@ -378,7 +390,7 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
 </main>
 <footer>© <span id="year"></span> Nirmit Nepal</footer>
  
-<div class="adminbar admin-only"><span>Admin mode · click any dashed text to edit</span><span class="abnote" id="abnote" hidden>Resume is showing default data. Import it to enable editing.</span><button class="pill" id="importresume" hidden>Import default resume data</button><button class="pill" id="savetext">Save changes</button></div>
+<div class="adminbar admin-only"><span>Admin mode · click any dashed text to edit</span><span class="abnote" id="abnote" hidden></span><span class="abnote" id="pubnote" hidden></span><button class="pill" id="importresume" hidden>Import default resume data</button><span class="abnote" id="dirtynote" hidden></span><button class="pill" id="previewbtn">Preview as visitor</button><button class="pill" id="savetext">Save changes</button></div>
  
 <dialog id="dlg">
   <form id="form">
@@ -540,17 +552,18 @@ $("savetext").onclick=async()=>{
   const btn=$("savetext"); btn.disabled=true;
   const rows=[...document.querySelectorAll("[data-edit]")].map(el=>({key:el.dataset.edit,value:el.textContent.trim()}));
   const t=await sb.from("site_content").upsert(rows);
-  let failed=t.error?t.error.message:"";
+  let failed=t.error?t.error.message:"", saved=0;
   for(const id of Object.keys(dirty)){
+    const row=rrows.find(x=>String(x.id)===id); if(!row){delete dirty[id];continue}
     const patch=dirty[id];
-    const r=await sb.from("resume_data").update(patch).eq("id",isNaN(+id)?id:+id);
-    if(r.error){failed=r.error.message;continue}
-    const row=rrows.find(x=>String(x.id)===id); if(row) Object.assign(row,patch);
-    delete dirty[id];
+    const r=await dbw(sb.from(RT).update(patch).eq("id",row.id).select());
+    if(r.error){failed=r.error;continue}
+    Object.assign(row,patch); delete dirty[id]; saved++;
   }
-  btn.disabled=false;
+  btn.disabled=false; dirtyNote();
   toast(failed?"Couldn’t save: "+failed:"Changes saved");
 };
+
  
 /* ====== Auth ====== */
 function setAdmin(on){
@@ -558,7 +571,11 @@ function setAdmin(on){
   $("login").textContent=on?"Log out":"Admin login";
   document.querySelectorAll("[data-edit]").forEach(el=>el.contentEditable=on?"true":"false");
   if(skills.length) view();
-  try{ if(rrows.length) renderResume(); }catch(e){}
+  try{
+    if(!on&&preview){preview=false;document.body.classList.remove("preview");$("previewbtn").textContent="Preview as visitor"}
+    if(on&&needsSeed) loadResume();
+    else{ if(rrows.length) renderResume(); if(on) verifyPublic(); }
+  }catch(e){}
 }
 const ldlg=$("ldlg"), lform=$("lform");
 $("login").onclick=async()=>{
@@ -727,33 +744,91 @@ const DEFAULT_RESUME=[
   {category:"extracurricular",title:"Clubs & Societies",details:"--"},
   {category:"extracurricular",title:"Competitions & Events",details:"--"}
 ];
-let rrows=[], rFallback=false, vis={}, dirty={};
+const RT="resume_data", CATKEYS=RCATS.map(c=>c.key);
+let rrows=[], rFallback=false, vis={}, dirty={}, tagState={}, needsSeed=false, seeding=false, readErr="", preview=false, focusId=null;
+const adm=()=>isAdmin&&!preview;
+const canEdit=()=>!!(adm()&&!rFallback&&sb);
 function setTxt(e,t){e.textContent=t; if((t||"").trim()==="--") e.classList.add("ph")}
 function mk(tag,cls,txt){const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) setTxt(e,txt); return e}
 const put=(p,...c)=>{c.forEach(x=>{if(x) p.append(x)});return p};
 const csv=v=>(v||"").split(",").map(x=>x.trim()).filter(Boolean);
-const canEdit=()=>!!(isAdmin&&!rFallback&&sb);
 const val=(row,f)=>dirty[row.id]&&f in dirty[row.id]?dirty[row.id][f]:(row[f]||"");
+function selectAll(el){const r=document.createRange();r.selectNodeContents(el);const g=getSelection();g.removeAllRanges();g.addRange(r)}
+function dirtyNote(){const n=Object.keys(dirty).length,e=$("dirtynote");e.hidden=!n;e.textContent="● "+n+" unsaved"}
+addEventListener("beforeunload",e=>{if(Object.keys(dirty).length){e.preventDefault();e.returnValue=""}});
 
-/* an editable text element: dashed + contenteditable for the admin, plain text (or nothing if empty) for visitors */
+/* a write that must really change rows: Supabase silently returns 0 rows when RLS blocks an update/delete */
+async function dbw(q){
+  const {data,error}=await q;
+  if(error) return {error:error.message};
+  if(!data||!data.length) return {error:"blocked by database permissions (check your RLS policies)"};
+  return {data};
+}
+
+/* single-line editable text: dashed + contenteditable for the admin, plain text (or nothing if empty) for visitors */
 function ed(tag,cls,row,f,ph){
   const v=val(row,f);
   if(!canEdit()){ if(!v) return null; return mk(tag,cls,v) }
-  const e=mk(tag,cls,v); e.classList.add("redit"); e.contentEditable="true"; e.spellcheck=false; e.dataset.ph=ph;
-  e.addEventListener("input",()=>{
-    const t=e.textContent.trim();
-    (dirty[row.id]=dirty[row.id]||{})[f]=t; e.classList.toggle("ph",t==="--");
-  });
+  const e=mk(tag,cls,v); e.classList.add("redit"); e.contentEditable="true"; e.spellcheck=false; e.dataset.ph=ph; e.dataset.rid=row.id;
+  e.addEventListener("input",()=>{const t=e.textContent.trim();(dirty[row.id]=dirty[row.id]||{})[f]=t;e.classList.toggle("ph",t==="--");dirtyNote()});
   e.addEventListener("keydown",ev=>{if(ev.key==="Enter"){ev.preventDefault();e.blur()}});
   e.addEventListener("paste",ev=>{ev.preventDefault();document.execCommand("insertText",false,(ev.clipboardData.getData("text/plain")||"").replace(/\s*\n\s*/g," "))});
   return e;
 }
 function delBtn(row){
   if(!canEdit()) return null;
-  const b=mk("button","icon-btn sm admin-only","✕"); b.type="button"; b.setAttribute("aria-label","Delete item");
+  const b=mk("button","icon-btn sm admin-only","✕"); b.type="button"; b.setAttribute("aria-label","Delete item"); b.title="Delete";
   b.onclick=()=>removeRow(row); return b;
 }
 const chips=(csvStr,cls)=>csv(csvStr).map(x=>mk("span",cls||"tag",x));
+
+/* chip editor shared by Technical skills and Projects: click = dim / undim, double-click = rename, × = remove, input = add */
+function tagItems(row){
+  if(!tagState[row.id]) tagState[row.id]=[...csv(val(row,"tags")).map(t=>({t,learn:false})),...csv(val(row,"learning")).map(t=>({t,learn:true}))];
+  return tagState[row.id];
+}
+function tagCommit(row){
+  const it=tagItems(row); it.sort((a,b)=>a.learn-b.learn);
+  const d=dirty[row.id]=dirty[row.id]||{};
+  d.tags=it.filter(x=>!x.learn).map(x=>x.t).join(", ");
+  d.learning=it.filter(x=>x.learn).map(x=>x.t).join(", ");
+  dirtyNote();
+}
+function tagBox(row,cls){
+  const box=mk("div","tagbox"+(cls?" "+cls:""));
+  const paint=focusAdd=>{
+    box.innerHTML=""; const it=tagItems(row);
+    it.forEach(item=>{
+      const c=mk("span","tag chip-ed"+(item.learn?" learn":"")), tx=mk("span","tx",item.t);
+      tx.title="Click: dim / undim · double-click: rename";
+      tx.onclick=()=>{clearTimeout(tx.t);tx.t=setTimeout(()=>{item.learn=!item.learn;tagCommit(row);paint()},220)};
+      tx.ondblclick=()=>{
+        clearTimeout(tx.t); tx.contentEditable="true"; tx.focus(); selectAll(tx);
+        const done=ok=>{
+          tx.onblur=null; tx.contentEditable="false";
+          const v=tx.textContent.replace(/,/g," ").trim();
+          if(ok&&v!==item.t){ if(v) item.t=v; else it.splice(it.indexOf(item),1); tagCommit(row) }
+          paint();
+        };
+        tx.onblur=()=>done(true);
+        tx.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();done(true)}else if(e.key==="Escape"){e.preventDefault();done(false)}};
+      };
+      const x=mk("button","x","×"); x.type="button"; x.title="Remove";
+      x.onclick=()=>{it.splice(it.indexOf(item),1);tagCommit(row);paint()};
+      c.append(tx,x); box.append(c);
+    });
+    const inp=document.createElement("input"); inp.className="tag-add"; inp.placeholder="+ add"; inp.maxLength=40; inp.setAttribute("aria-label","Add a tag");
+    const add=()=>{
+      const parts=inp.value.split(",").map(v=>v.trim()).filter(Boolean); inp.value="";
+      if(!parts.length) return false;
+      parts.forEach(t=>it.push({t,learn:false})); tagCommit(row); return true;
+    };
+    inp.onkeydown=e=>{if(e.key==="Enter"||e.key===","){e.preventDefault();if(add()) paint(true)}};
+    inp.onblur=()=>{if(add()) paint()};
+    box.append(inp); if(focusAdd) inp.focus();
+  };
+  paint(); return box;
+}
 
 const BUILD={
   education:rows=>{const ol=mk("ol","r-edu");rows.forEach(r=>{
@@ -766,10 +841,8 @@ const BUILD={
     const row=mk("div","skl ritem");
     row.append(put(mk("div","skl-name hrow"),ed("span",null,r,"title","Group name"),delBtn(r)));
     const box=mk("div");
-    if(canEdit()){
-      [["Skills","tags","comma-separated skills"],["Learning","learning","still learning (shown dashed)"]].forEach(([lab,f,ph])=>{
-        const l=mk("div","tline"); l.append(mk("small",null,lab)); l.append(ed("div",null,r,f,ph)); box.append(l)});
-    }else{
+    if(canEdit()) box.append(tagBox(r));
+    else{
       const t=mk("div","tags"); chips(val(r,"tags")).forEach(c=>t.append(c));
       chips(val(r,"learning"),"tag learn").forEach(c=>{c.title="Currently learning";t.append(c);any=true}); box.append(t);
     }
@@ -778,8 +851,8 @@ const BUILD={
   project:rows=>{const g=mk("div","r-proj");rows.forEach(r=>{
     const c=mk("article","proj ritem");
     c.append(put(mk("div","hrow"),ed("h4",null,r,"title","Project name"),delBtn(r)));
-    if(canEdit()) c.append(ed("div","tl",r,"tags","tech stack, comma-separated"));
-    else{const tg=chips(val(r,"tags"));if(tg.length) c.append(put(mk("div","tags sm"),...tg))}
+    if(canEdit()) c.append(tagBox(r,"sm"));
+    else{const tg=[...chips(val(r,"tags")),...chips(val(r,"learning"),"tag learn")];if(tg.length) c.append(put(mk("div","tags sm"),...tg))}
     put(c,ed("p","det",r,"details","Details"));
     g.append(c)});return g},
   language:rows=>{const g=mk("div","r-lang");rows.forEach(r=>{
@@ -800,14 +873,14 @@ function renderResume(){
   const box=$("rbody"); box.innerHTML="";
   RCATS.forEach(cat=>{
     const hidden=!!(vis[cat.key]&&vis[cat.key].hidden);
-    if(hidden&&!isAdmin) return;                      // public visitors never see hidden sections
+    if(hidden&&!adm()) return;                        // visitors never see hidden sections
     const rows=rrows.filter(r=>r.category===cat.key);
     const sec=mk("div","rsec"+(rows.length?"":" empty")+(hidden?" is-hidden":""));
     if(cat.key==="education") sec.id="education-list";
     const head=mk("div","rsec-head"), left=mk("div","rsec-title");
     left.append(mk("h3",null,cat.title));
     const eye=mk("button","eye admin-only",hidden?"🙈":"👁️"); eye.type="button";
-    eye.title=hidden?"Hidden from public. Click to show":"Visible to everyone. Click to hide";
+    eye.title=hidden?"Hidden from visitors. Click to show":"Visible to visitors. Click to hide";
     eye.setAttribute("aria-label",eye.title); eye.onclick=()=>toggleSection(cat.key);
     left.append(eye);
     if(hidden) left.append(mk("span","hbadge admin-only","Hidden from public"));
@@ -816,54 +889,103 @@ function renderResume(){
     sec.append(head);
     const body=mk("div","rsec-body");
     body.append(rows.length?BUILD[cat.key](rows):mk("p","note","Nothing here yet."+(canEdit()?" Use + Add to create the first entry.":"")));
+    if(canEdit()&&(cat.key==="skill"||cat.key==="project")) body.append(mk("p","thint","Click a chip to dim / undim it · double-click to rename · × to remove · type in “+ add” to add more."));
     sec.append(body); box.append(sec);
   });
-  const imp=!!(rFallback&&sb);
-  $("importresume").hidden=!imp; $("abnote").hidden=!imp;
+  const msg=readErr||(rFallback&&sb&&isAdmin?"Showing the built-in default resume. Import it to enable editing.":"");
+  $("abnote").hidden=!msg; $("abnote").textContent=msg;
+  $("importresume").hidden=!(rFallback&&sb);
+  if(focusId!=null){
+    const el=box.querySelector(`.redit[data-rid="${focusId}"]`);
+    if(el){el.scrollIntoView({block:"center",behavior:"smooth"});el.focus();selectAll(el)}
+    focusId=null;
+  }
 }
+
 async function loadResume(){
-  vis={};
+  vis={}; readErr=""; needsSeed=false;
+  Object.keys(tagState).forEach(id=>{if(!(dirty[id]&&"tags" in dirty[id])) delete tagState[id]});
   if(!sb){rrows=DEFAULT_RESUME;rFallback=true;renderResume();return}
-  const {data,error}=await sb.from("resume_data").select("*").order("sort_order").order("created_at");
-  if(error) console.error(error);
+  const {data,error}=await sb.from(RT).select("*").order("sort_order").order("created_at");
+  if(error){console.error(error);readErr="Couldn’t read resume_data: "+error.message}
   const all=data||[];
   all.filter(r=>r.category==="section_visibility").forEach(r=>{vis[r.title]={id:r.id,hidden:r.subtitle==="hidden"}});
-  const content=all.filter(r=>r.category!=="section_visibility");
-  if(error||!content.length){rrows=DEFAULT_RESUME;rFallback=true}
+  const content=all.filter(r=>CATKEYS.includes(r.category));
+  if(!error&&!content.length&&!all.some(r=>r.category==="meta")){
+    needsSeed=true;                                   // brand-new table: fill it once so everything is editable
+    if(isAdmin&&await seedDefaults()) return loadResume();
+  }
+  if(error||needsSeed){rrows=DEFAULT_RESUME;rFallback=true}
   else{rrows=content;rFallback=false}
   renderResume();
+  if(isAdmin) verifyPublic();
+}
+async function seedDefaults(){
+  if(seeding) return false; seeding=true;
+  const rows=[...DEFAULT_RESUME.map((r,i)=>({...r,sort_order:i+1})),{category:"meta",title:"seeded",sort_order:0}];
+  const res=await dbw(sb.from(RT).insert(rows).select()); seeding=false;
+  if(res.error){readErr="Couldn’t create the default resume rows: "+res.error;return false}
+  return true;
 }
 
-/* admin: show / hide a whole section (stored as a section_visibility row) */
+/* does a logged-out visitor really see what the admin saved? (uses a separate anonymous client) */
+let pubClient=null, pubTimer=0;
+function verifyPublic(){
+  clearTimeout(pubTimer);
+  pubTimer=setTimeout(async()=>{
+    const el=$("pubnote"); if(!sb||!isAdmin) return;
+    let msg="";
+    try{
+      pubClient=pubClient||supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+      const {data,error}=await pubClient.from(RT).select("category,title,subtitle");
+      if(error||!data) msg="⚠ Visitors can’t read resume_data"+(error?" ("+error.message+")":"")+", so they see the default resume and hidden sections still show. Run the SQL policy fix.";
+      else{
+        const seen={}; data.filter(r=>r.category==="section_visibility").forEach(r=>{seen[r.title]=r.subtitle==="hidden"});
+        const bad=Object.keys(vis).filter(k=>!!vis[k].hidden!==!!seen[k]);
+        if(!rFallback&&!data.some(r=>CATKEYS.includes(r.category))) msg="⚠ Visitors see no resume rows. Add a public read policy on resume_data.";
+        else if(bad.length) msg="⚠ Visitors don’t see your latest hide/show settings yet.";
+        else msg="✓ Visitors see exactly what you saved.";
+      }
+    }catch(e){msg="⚠ Couldn’t check the public view: "+e.message}
+    el.textContent=msg; el.hidden=!msg;
+  },300);
+}
+
+/* admin: show / hide a whole section */
 async function toggleSection(key){
   if(!sb||!isAdmin) return;
-  const cur=vis[key], hide=!(cur&&cur.hidden), v=hide?"hidden":"visible";
-  const res=cur&&cur.id
-    ? await sb.from("resume_data").update({subtitle:v}).eq("id",cur.id)
-    : await sb.from("resume_data").insert({category:"section_visibility",title:key,subtitle:v,sort_order:0});
-  if(res.error){toast("Couldn’t update visibility: "+res.error.message);return}
-  toast(hide?"Section hidden from the public":"Section is visible again"); loadResume();
+  const prev=vis[key], hide=!(prev&&prev.hidden), v=hide?"hidden":"visible";
+  vis[key]={...(prev||{}),hidden:hide}; renderResume();           // instant feedback
+  const res=prev&&prev.id
+    ? await dbw(sb.from(RT).update({subtitle:v}).eq("id",prev.id).select())
+    : await dbw(sb.from(RT).insert({category:"section_visibility",title:key,subtitle:v,sort_order:0}).select());
+  if(res.error){ if(prev) vis[key]=prev; else delete vis[key]; renderResume(); toast("Couldn’t change visibility: "+res.error); return }
+  vis[key].id=res.data[0].id;
+  toast(hide?"Section hidden from visitors":"Section visible to visitors again");
+  verifyPublic();
 }
 
-/* admin: add / delete items (edit text inline, then Save changes) */
+/* admin: add / delete items (text is edited inline, then Save changes) */
 const NEWROW={education:"New institution",skill:"New skill group",project:"New project",language:"New language",certification:"New certification",extracurricular:"New group"};
 async function addItem(cat){
   if(!canEdit()) return;
-  const {error}=await sb.from("resume_data").insert({category:cat,title:NEWROW[cat],sort_order:rrows.reduce((m,x)=>Math.max(m,x.sort_order||0),0)+1});
-  if(error){toast("Couldn’t add: "+error.message);return}
-  toast("Item added. Click its dashed text to edit"); loadResume();
+  const res=await dbw(sb.from(RT).insert({category:cat,title:NEWROW[cat],sort_order:rrows.reduce((m,x)=>Math.max(m,x.sort_order||0),0)+1}).select());
+  if(res.error){toast("Couldn’t add: "+res.error);return}
+  rrows.push(res.data[0]); focusId=res.data[0].id; renderResume();
 }
 async function removeRow(r){
   if(!confirm(`Delete “${val(r,"title")||"this item"}”?`)) return;
-  const {error}=await sb.from("resume_data").delete().eq("id",r.id);
-  if(error){toast("Couldn’t delete: "+error.message);return}
-  delete dirty[r.id]; toast("Item deleted"); loadResume();
+  const res=await dbw(sb.from(RT).delete().eq("id",r.id).select());
+  if(res.error){toast("Couldn’t delete: "+res.error);return}
+  rrows=rrows.filter(x=>x!==r); delete dirty[r.id]; delete tagState[r.id]; dirtyNote(); renderResume(); toast("Item deleted");
 }
 $("importresume").onclick=async()=>{
   if(!sb||!isAdmin) return;
-  const {error}=await sb.from("resume_data").insert(DEFAULT_RESUME.map((r,i)=>({...r,sort_order:i+1})));
-  if(error){toast("Couldn’t import: "+error.message);return}
-  toast("Default resume data imported"); loadResume();
+  if(await seedDefaults()){toast("Default resume imported");loadResume()} else renderResume();
+};
+$("previewbtn").onclick=()=>{
+  preview=!preview; document.body.classList.toggle("preview",preview);
+  $("previewbtn").textContent=preview?"Exit preview":"Preview as visitor"; renderResume();
 };
 
 /* theme + scroll */

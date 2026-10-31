@@ -14,6 +14,8 @@
   --track:#dfe9e0; --shadow:0 1px 2px rgba(16,38,26,.06),0 14px 34px -18px rgba(16,38,26,.22);
   --grad:linear-gradient(90deg,#14452f,#2a8a56 55%,#4fae5e);
   --on-accent:#f4f8f2; --ghost-bd:#9fc3a9;
+  --gl-bg:#f4f8f2; --gl-a:#8fd6a3; --gl-b:#7fd0c4; --gl-c:#b3c0f0; --gl-k:.8;
+  --orb-o:.9; --orb1:#a4dcb0; --orb2:#97d6cc; --orb3:#bfc9f2;
   --display:'Bricolage Grotesque',Georgia,sans-serif; --font:'Instrument Sans',system-ui,sans-serif;
 }
 html[data-theme=dark]{
@@ -22,6 +24,8 @@ html[data-theme=dark]{
   --track:#1b3024; --shadow:0 12px 32px -16px rgba(0,0,0,.6);
   --grad:linear-gradient(90deg,#9bd06a,#58b06e 55%,#c8ec8a);
   --on-accent:#0b1710; --ghost-bd:#3d6b4c;
+  --gl-bg:#0b1710; --gl-a:#0f8a5f; --gl-b:#0b7c80; --gl-c:#4a4bc4; --gl-k:.42;
+  --orb-o:.34; --orb1:#0c6e4c; --orb2:#0b6466; --orb3:#3a3b9c;
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
@@ -33,17 +37,19 @@ button{font:inherit;color:inherit;cursor:pointer}
 body:not(.admin) .admin-only{display:none!important}
  
 #progress{position:fixed;inset:0 0 auto 0;height:3px;background:linear-gradient(90deg,var(--g2),var(--g3));transform:scaleX(0);transform-origin:left;z-index:30}
-
-/* Profile Avatar Styles */
-.profile-header-layout{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
-.profile-avatar{position:relative;width:100px;height:100px;border-radius:50%;background:var(--soft);border:2px solid var(--g2);overflow:hidden;display:grid;place-items:center;flex:none;box-shadow:var(--shadow)}
-.profile-avatar img{width:100%;height:100%;object-fit:cover}
-.profile-avatar svg{width:60px;height:60px;fill:var(--muted);opacity:.7}
-body.admin .profile-avatar::after{content:"Change Photo";position:absolute;inset:0;background:rgba(0,0,0,0.6);color:#fff;font-size:0.7rem;font-weight:600;display:grid;place-items:center;opacity:0;transition:opacity 0.2s;cursor:pointer}
-body.admin .profile-avatar:hover::after{opacity:1}
-#avatar-input{display:none}
-
-#lasers{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+#gl{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:none}
+html.gl #gl{display:block}
+html.gl .blobs{display:none}
+/* ambient mesh gradient (CSS fallback when WebGL is unavailable): 3 large blurred orbs, colours + opacity come from the theme variables (--orb-o, --orb1..3) */
+.blobs{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;contain:strict}
+.blobs i{position:absolute;border-radius:50%;filter:blur(70px);opacity:var(--orb-o);pointer-events:none;will-change:transform;transform:translate3d(0,0,0);backface-visibility:hidden}
+.blobs i:nth-child(1){width:58vmax;height:46vmax;top:-16vmax;left:-14vmax;background:radial-gradient(closest-side,var(--orb1),transparent);animation:orbA 22s ease-in-out infinite alternate}
+.blobs i:nth-child(2){width:50vmax;height:42vmax;bottom:-18vmax;right:-14vmax;background:radial-gradient(closest-side,var(--orb2),transparent);animation:orbB 25s ease-in-out infinite alternate}
+.blobs i:nth-child(3){width:40vmax;height:34vmax;top:34%;left:36%;background:radial-gradient(closest-side,var(--orb3),transparent);animation:orbC 19s ease-in-out infinite alternate}
+@keyframes orbA{0%{transform:translate3d(0,0,0) rotate(0deg) scale(1)}100%{transform:translate3d(14vmax,10vmax,0) rotate(28deg) scale(1.15)}}
+@keyframes orbB{0%{transform:translate3d(0,0,0) rotate(0deg) scale(1.1)}100%{transform:translate3d(-12vmax,-12vmax,0) rotate(-24deg) scale(.95)}}
+@keyframes orbC{0%{transform:translate3d(-8vmax,6vmax,0) rotate(0deg) scale(.9)}100%{transform:translate3d(10vmax,-8vmax,0) rotate(36deg) scale(1.12)}}
+ 
 .nav{position:sticky;top:max(12px,env(safe-area-inset-top));z-index:20;margin:12px auto 0;width:min(1080px,92%)}
 .nav-in{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 10px 20px;background:color-mix(in srgb,var(--card) 80%,transparent);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:999px;box-shadow:var(--shadow)}
 .logo{font:800 1.1rem var(--display);letter-spacing:-.01em;text-decoration:none;color:var(--g1);background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap}
@@ -84,10 +90,12 @@ h2{font:800 clamp(2rem,4.5vw,3rem)/1.1 var(--display);letter-spacing:-.02em;marg
 .lead{color:var(--muted);max-width:58ch;margin:0 0 30px}
 .about p{max-width:60ch;color:var(--muted);font-size:1.1rem}
  
+/* editable text (admin) */
 body.admin [data-edit]{outline:2px dashed color-mix(in srgb,var(--g2) 60%,transparent);outline-offset:6px;border-radius:6px;cursor:text}
 body.admin [data-edit]:focus{outline:2px solid var(--g2);background:var(--glow)}
  
 [hidden]{display:none!important}
+/* resume */
 .rhead{display:grid;gap:22px;padding:8px 0 34px;border-bottom:1px solid var(--line)}
 .rtop{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:18px}
 .rname{font:800 clamp(1.9rem,4.2vw,2.7rem)/1.1 var(--display);letter-spacing:-.02em;margin:0}
@@ -198,6 +206,7 @@ body.preview [data-edit]{outline:none!important}
 textarea{font:inherit;padding:11px 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);resize:vertical;min-height:84px}
 textarea:focus{border-color:var(--g2);outline:none;box-shadow:0 0 0 3px var(--glow)}
 dialog{max-height:90vh;overflow:auto}
+/* contact links */
 .links{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;max-width:760px;margin:0 auto}
 .chip-wrap{display:inline-flex;align-items:center;gap:6px}
 .chip{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:46px;padding:10px 20px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;font:600 .96rem var(--font);text-decoration:none;box-shadow:var(--shadow);transition:transform .2s,border-color .2s,background .2s,box-shadow .2s}
@@ -215,6 +224,7 @@ body.admin .chip-wrap{padding:4px 4px 4px 0;border-radius:999px;outline:2px dash
 select{max-width:100%}
 dialog select{width:100%}
  
+/* rating scale */
 .legend{background:linear-gradient(135deg,var(--soft),color-mix(in srgb,var(--soft) 40%,var(--card)));border:1px solid var(--line);border-radius:24px;padding:clamp(18px,3vw,26px)}
 .legend-top{margin-bottom:18px}
 .legend h3{margin:0;font:800 1.2rem var(--display)}
@@ -315,6 +325,9 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
 @media (max-width:340px){.tiers{grid-template-columns:1fr}}
 @media (hover:none){.card:hover,.tier:hover{transform:none}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition-duration:.01ms!important}h1 .ch{transform:none;opacity:1}}
+
+/* full-page 3D laser scene (replaces the old smoky gradient) */
+#lasers{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
 </style>
 </head>
 <body>
@@ -376,19 +389,9 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
 
     <header class="rhead">
       <div class="rtop">
-        <div class="profile-header-layout">
-          <div class="profile-avatar" id="avatar-box" title="Click to upload profile photo in admin mode">
-            <!-- Default Male Silhouette Outline SVG -->
-            <svg viewBox="0 0 24 24" id="avatar-svg">
-              <path d="M12 2C9.24 2 7 4.24 7 7c0 2.22 1.48 4.1 3.5 4.74C7.94 12.79 6 15.35 6 18.33V20h12v-1.67c0-2.98-1.94-5.54-4.5-6.59C15.52 11.1 17 9.22 17 7c0-2.76-2.24-5-5-5zm0 2c1.65 0 3 1.35 3 3s-1.35 3-3 3-3-1.35-3-3 1.35-3 3-3zm0 9c2.67 0 8 1.34 8 4v2H4v-2c0-2.66 5.33-4 8-4z"/>
-            </svg>
-            <img id="avatar-img" src="" alt="Profile Photo" style="display:none">
-            <input type="file" id="avatar-input" accept="image/*">
-          </div>
-          <div>
-            <h3 class="rname" id="hname"></h3>
-            <p class="rrole" id="hrole"></p>
-          </div>
+        <div>
+          <h3 class="rname" id="hname"></h3>
+          <p class="rrole" id="hrole"></p>
         </div>
         <div class="ractions">
           <a class="btn" href="resume.pdf" download="Nirmit-Nepal-Resume.pdf"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download Resume</a>
@@ -467,6 +470,7 @@ const $ = id => document.getElementById(id);
 const grid = $("grid"), reduce = matchMedia("(prefers-reduced-motion:reduce)").matches;
 let skills = [], isAdmin = false;
  
+// Shown only until Supabase is connected
 const SAMPLE = [
   {id:1,name:"Python",category:"Programming language",score:6},
   {id:2,name:"Java",category:"Programming language",score:6},
@@ -481,9 +485,11 @@ const label = s => +s === 0 ? "Not started yet" : ["Learning the basics","Can co
  
 function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove("show"),3200)}
  
+/* hero name */
 [["n1","Nirmit"],["n2","Nepal"]].forEach(([id,t],r)=>{$(id).innerHTML=[...t].map((c,i)=>`<span class="ch" style="--i:${i+r*6}">${c}</span>`).join("")});
  
-$("tiers").innerHTML = TIERS.map(([a,b,t],i)=>`<button class="tier" data-t="${i}"><div class="tier-top"><span class="rng"><span>${a}–${b}</span></span><span class="mini" aria-hidden="true">${[...Array(11)].map((_,k)=>`<i class="${k>=a&&k<=b?"on":""}"></i>`).join("")}</span></div><span class="t">${t}</span></button>`).join("");
+/* rating scale tiles */
+$("tiers").innerHTML = TIERS.map(([a,b,t],i)=>`<button class="tier" data-t="${i}"><div class="tier-top"><span class="rng">${a}–${b}</span><span class="mini" aria-hidden="true">${[...Array(11)].map((_,k)=>`<i class="${k>=a&&k<=b?"on":""}"></i>`).join("")}</span></div><span class="t">${t}</span></button>`).join("");
 document.querySelectorAll(".tier").forEach(b=>{
   const on=()=>grid.querySelectorAll(".card").forEach(c=>c.classList.toggle("dim",c.dataset.tier!==b.dataset.t));
   const off=()=>grid.querySelectorAll(".card").forEach(c=>c.classList.remove("dim"));
@@ -491,6 +497,7 @@ document.querySelectorAll(".tier").forEach(b=>{
   ["pointerleave","blur"].forEach(e=>b.addEventListener(e,off));
 });
  
+/* cards */
 const io = new IntersectionObserver(es=>es.forEach(e=>{
   if(!e.isIntersecting) return;
   const c=e.target; io.unobserve(c); c.classList.add("in");
@@ -528,11 +535,12 @@ function view(){
 }
 $("sort").onchange=view;
  
+/* ====== Supabase: load ====== */
 async function loadSkills(){
   if(!sb){skills=SAMPLE;view();return}
   grid.innerHTML='<li class="card skel"></li><li class="card skel"></li>';
   const {data,error}=await sb.from("skills").select("*").order("sort_order").order("created_at");
-  if(error){grid.innerHTML="";$("count").textContent="Couldn’t load skills.";console.error(error);marqueeFallback();return}
+  if(error){grid.innerHTML="";$("count").textContent="Couldn’t load skills. Check your Supabase setup and refresh.";console.error(error);marqueeFallback();return}
   skills=data; view(); if(!skills.length) marqueeFallback();
 }
 async function loadContent(){
@@ -542,6 +550,7 @@ async function loadContent(){
   data.forEach(r=>{const el=document.querySelector(`[data-edit="${r.key}"]`);if(el)el.textContent=r.value});
 }
  
+/* ====== Admin: skills CRUD (RLS enforces that only you can write) ====== */
 const dlg=$("dlg"), form=$("form"); let editing=null;
 function openSkill(s){
   editing=s||null; $("dlg-title").textContent=s?"Edit skill":"Add a skill";
@@ -569,6 +578,7 @@ async function removeSkill(s){
   toast("Skill deleted"); loadSkills();
 }
  
+/* ====== Admin: editable text ====== */
 document.querySelectorAll("[data-edit]").forEach(el=>el.addEventListener("paste",e=>{
   if(!isAdmin) return; e.preventDefault();
   document.execCommand("insertText",false,e.clipboardData.getData("text/plain"));
@@ -583,6 +593,10 @@ $("savetext").onclick=async()=>{
   toast("Page text saved");
 };
 
+
+
+ 
+/* ====== Auth ====== */
 function setAdmin(on){
   isAdmin=on; document.body.classList.toggle("admin",on);
   $("login").textContent=on?"Log out":"Admin login";
@@ -595,7 +609,7 @@ function setAdmin(on){
 }
 const ldlg=$("ldlg"), lform=$("lform");
 $("login").onclick=async()=>{
-  if(!sb){toast("Add your Supabase URL and key");return}
+  if(!sb){toast("Add your Supabase URL and key at the top of the script first");return}
   if(isAdmin){await sb.auth.signOut();toast("Logged out");return}
   $("lerr").textContent=""; ldlg.showModal();
 };
@@ -611,6 +625,7 @@ if(sb){
   sb.auth.onAuthStateChange((_e,session)=>setAdmin(!!session));
 }
  
+/* ====== Contact links (Supabase table: contact_links) ====== */
 const EMAIL = "nirmitnepal1234@gmail.com";
 const ICONS = {
   gmail:{name:"Email / Gmail",svg:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>'},
@@ -682,6 +697,7 @@ async function loadLinks(){
   renderLinks();
 }
  
+/* admin: add / edit / delete links */
 const cdlg=$("cdlg"), cform=$("cform"); let editingLink=null;
 function openLink(l){
   editingLink=l||null; $("cdlg-title").textContent=l?"Edit contact link":"Add a contact link";
@@ -719,6 +735,7 @@ $("importlinks").onclick=async()=>{
   toast("Default links imported"); loadLinks();
 };
  
+/* ====== Resume (Supabase table: resume_data) ====== */
 const RLINKS=[
   {label:"GitHub",url:"https://github.com/nirmitnepal1234-source",icon:"github"},
   {label:"LinkedIn",url:"https://linkedin.com/in/nirmit-nepal-564342441/",icon:"linkedin"},
@@ -728,7 +745,8 @@ RLINKS.forEach(l=>{
   const a=document.createElement("a"); a.className="chip sm"; a.href=l.url; a.target="_blank"; a.rel="noopener noreferrer";
   a.innerHTML=svgIcon(l.icon); const t=document.createElement("span"); t.textContent=l.label; a.append(t); $("rlinks").append(a);
 });
-
+/* Table shape: resume_data(category text unique, content jsonb, is_visible boolean). One row per section.
+   Every change is saved with upsert(..., {onConflict:"category"}) and only applied locally after Supabase confirms. */
 const RT="resume_data";
 const RCATS=[
   {key:"education",title:"Education",add:"+ Add Education",noun:"education",f:[["title","Institution","e.g. B.M.S. Institute of Technology and Management",1],["subtitle","Degree / programme","e.g. B.E. / B.Tech in CSE"],["period","Timeline / years","e.g. 2026 – 2030"],["location","Location","City, country"]]},
@@ -740,7 +758,7 @@ const RCATS=[
 ];
 const KEYS=RCATS.map(c=>c.key);
 const DEFAULTS={
-  header:{name:"Nirmit Nepal",role:"CSE Student | Aspiring Software Developer",email:"nirmitnepal1234@gmail.com",phones:["+91 9234179508","+977 9803080969"],location:"Yelahanka, Bengaluru, Karnataka, India",avatar:""},
+  header:{name:"Nirmit Nepal",role:"CSE Student | Aspiring Software Developer",email:"nirmitnepal1234@gmail.com",phones:["+91 9234179508","+977 9803080969"],location:"Yelahanka, Bengaluru, Karnataka, India"},
   education:[
     {title:"B.M.S. Institute of Technology and Management (BMSIT&M), VTU",subtitle:"B.E. / B.Tech in CSE · 1st semester",period:"2026 – 2030",location:"Bengaluru, Karnataka, India"},
     {title:"Himalayan Whitehouse International College",subtitle:"+2 Science · NEB High School Diploma",period:"2025",location:"Kathmandu, Nepal"},
@@ -761,21 +779,23 @@ const DEFAULTS={
   extracurriculars:[{title:"Coding Platforms",details:"--"},{title:"Clubs & Societies",details:"--"},{title:"Competitions & Events",details:"--"}]
 };
 
+/* ---- state (always rebuilt from the database on load) ---- */
 let R={}, hidden={}, readErr="", preview=false, flashId=null, pending=0, tableEmpty=false;
 const adm=()=>isAdmin&&!preview;
 const canEdit=()=>!!(adm()&&sb);
 const clone=o=>JSON.parse(JSON.stringify(o));
 const uid=()=>Math.random().toString(36).slice(2,10);
 
+/* ---- normalising whatever is stored (accepts older / differently named fields) ---- */
 const AL={title:["title","institution","name","school","project","language","course","group"],subtitle:["subtitle","degree","program","programme","level","issuer","platform"],period:["period","years","timeline","date","year"],location:["location"],tags:["tags","tech_stack","techStack","stack","technologies","skills","items"],learning:["learning"],details:["details","description","desc","notes"],link_text:["link_text","linkText","button_text","buttonText"],link_url:["link_url","linkUrl","url","link","href"]};
 const pick=(o,names)=>{for(const n of names){const v=o[n];if(v!=null&&v!=="") return Array.isArray(v)?v.join(", "):String(v)}return ""};
 function normItem(cat,x){
   if(typeof x==="string"){
-    const m=cat.key==="languages_spoken"&&x.match(/^(.*?)\s*\((.*)\)\s*$/);
+    const m=cat.key==="languages_spoken"&&x.match(/^(.*?)\s*\((.*)\)\s*$/);   // "Nepali (Native)" -> language + level
     x=m?{title:m[1],subtitle:m[2]}:{title:x};
   }
   if(!x||typeof x!=="object") x={};
-  const fs=cat.f.map(z=>z[0]); if(fs.includes("tags")&&!fs.includes("learning")) fs.push("learning");
+  const fs=cat.f.map(z=>z[0]); if(fs.includes("tags")&&!fs.includes("learning")) fs.push("learning");   // dimmed tags are kept for projects too
   const o={id:x.id||uid()}; fs.forEach(f=>{o[f]=pick(x,AL[f]||[f])}); return o;
 }
 function normCat(key,c){
@@ -783,12 +803,13 @@ function normCat(key,c){
   if(key==="header"){
     c=(c&&typeof c==="object"&&!Array.isArray(c))?c:{};
     const d=DEFAULTS.header, ph=Array.isArray(c.phones)?c.phones:(c.phones||c.phone?String(c.phones||c.phone).split(/\s*[\/,|]\s*/):d.phones);
-    return {name:c.name||d.name,role:c.role||c.title||d.role,email:c.email||d.email,phones:ph.map(String).filter(Boolean),location:c.location||d.location,avatar:c.avatar||d.avatar};
+    return {name:c.name||d.name,role:c.role||c.title||d.role,email:c.email||d.email,phones:ph.map(String).filter(Boolean),location:c.location||d.location};
   }
   const cat=RCATS.find(k=>k.key===key);
   return Array.isArray(c)?c.map(x=>normItem(cat,x)):clone(DEFAULTS[key]).map(x=>normItem(cat,x));
 }
 
+/* ---- tiny DOM helpers ---- */
 function setTxt(e,t){e.textContent=t; if((t||"").trim()==="--") e.classList.add("ph")}
 function mk(tag,cls,txt){const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) setTxt(e,txt); return e}
 const put=(p,...c)=>{c.forEach(x=>{if(x) p.append(x)});return p};
@@ -796,15 +817,19 @@ const csv=v=>(v||"").split(",").map(x=>x.trim()).filter(Boolean);
 const ri=(tag,cls,item)=>{const e=mk(tag,cls);e.dataset.id=item.id;return e};
 function selectAll(el){const r=document.createRange();r.selectNodeContents(el);const g=getSelection();g.removeAllRanges();g.addRange(r)}
 addEventListener("beforeunload",e=>{if(pending){e.preventDefault();e.returnValue=""}});
-function fail(msg){alert(msg)}
+function fail(msg){
+  alert(msg+(/is_visible/.test(msg)?"\n\nAdd the column in Supabase:\nalter table resume_data add column if not exists is_visible boolean default true;":""));
+}
 
+/* ---- database ---- */
 async function dbw(q){
   const {data,error}=await q;
   if(error) return {error:error.message};
-  if(!data||!data.length) return {error:"Database write refused."};
+  if(!data||!data.length) return {error:"The database refused the change (blocked by permissions / RLS)."};
   return {data};
 }
-
+/* Save one section: the change is applied to a COPY, upserted, and only after Supabase confirms does it become the local state.
+   Saves of the same section run one after another so they can never overwrite each other. */
 const chain={};
 function saveSection(key,mutate,hide){
   const run=async()=>{
@@ -826,6 +851,7 @@ function setField(next,key,obj,f,v){
   const it=next.find(x=>x.id===obj.id); if(it) it[f]=v;
 }
 
+/* ---- inline-editable text: saved to Supabase when you leave the field ---- */
 function ed(tag,cls,key,obj,f,ph,onSaved){
   const v=obj[f]||"";
   if(!canEdit()){ if(!v) return null; return mk(tag,cls,v) }
@@ -854,6 +880,7 @@ function ctl(key,item,onlyDelete){
 }
 const chips=(csvStr,cls)=>csv(csvStr).map(x=>mk("span",cls||"tag",x));
 
+/* chip editor for Technical skills + Projects: click = dim / undim, double-click = rename, × = remove, input = add */
 function tagBox(key,item,cls){
   const box=mk("div","tagbox"+(cls?" "+cls:""));
   const read=o=>[...csv(o.tags).map(t=>({t,learn:false})),...csv(o.learning).map(t=>({t,learn:true}))];
@@ -869,6 +896,7 @@ function tagBox(key,item,cls){
     box.innerHTML="";
     it.forEach(item2=>{
       const c=mk("span","tag chip-ed"+(item2.learn?" learn":"")), tx=mk("span","tx",item2.t);
+      tx.title="Click: dim / undim · double-click: rename";
       tx.onclick=()=>{clearTimeout(tx.t);tx.t=setTimeout(()=>{item2.learn=!item2.learn;paint();commit()},220)};
       tx.ondblclick=()=>{
         clearTimeout(tx.t); tx.contentEditable="true"; tx.focus(); selectAll(tx);
@@ -881,10 +909,11 @@ function tagBox(key,item,cls){
         tx.onblur=()=>done(true);
         tx.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();done(true)}else if(e.key==="Escape"){e.preventDefault();done(false)}};
       };
-      const x=mk("button","x","×"); x.type="button"; x.onclick=()=>{it.splice(it.indexOf(item2),1);paint();commit()};
+      const x=mk("button","x","×"); x.type="button"; x.title="Remove";
+      x.onclick=()=>{it.splice(it.indexOf(item2),1);paint();commit()};
       c.append(tx,x); box.append(c);
     });
-    const inp=document.createElement("input"); inp.className="tag-add"; inp.placeholder="+ add"; inp.maxLength=40;
+    const inp=document.createElement("input"); inp.className="tag-add"; inp.placeholder="+ add"; inp.maxLength=40; inp.setAttribute("aria-label","Add a tag");
     const add=()=>{
       const parts=inp.value.split(",").map(v=>v.trim()).filter(Boolean); inp.value="";
       if(!parts.length) return false;
@@ -897,9 +926,11 @@ function tagBox(key,item,cls){
   paint(); return box;
 }
 
+/* plain input for the project link label / URL: saved with upsert (saveSection) when you leave the field */
 function linkInput(key,obj,f,ph,max,onSaved){
   const i=document.createElement("input");
   i.type="text"; i.className="lfin"; i.placeholder=ph; i.maxLength=max; i.value=obj[f]||""; i.spellcheck=false; i.autocomplete="off";
+  i.setAttribute("aria-label",f==="link_url"?"Project link URL":"Project link label");
   if(f==="link_url") i.inputMode="url";
   let saved=i.value;
   i.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();i.blur()}});
@@ -914,6 +945,7 @@ function linkInput(key,obj,f,ph,max,onSaved){
   });
   return i;
 }
+/* project link button: shows the exact text typed; hidden when there is no URL */
 function linkBtn(r){
   const url=(r.link_url||"").trim(); if(!url) return null;
   const a=document.createElement("a");
@@ -922,6 +954,7 @@ function linkBtn(r){
   return a;
 }
 
+/* ---- section builders ---- */
 const BUILD={
   education:(items,K)=>{const ol=mk("ol","r-edu");items.forEach(r=>{
     const li=ri("li","ritem",r);
@@ -950,13 +983,13 @@ const BUILD={
     if(canEdit()){
       const lf=mk("div","linkfields");
       lf.append(mk("p","lf-title","Link button"));
-      const refresh=()=>{
+      const refresh=()=>{                           // keep the live button in sync after a link field is saved
         const old=c.querySelector("a.plink"); if(old) old.remove();
         const nb=linkBtn(R[K].find(x=>x.id===r.id)||r); if(nb) c.insertBefore(nb,lf);
       };
-      [["Button label","link_text","e.g. View in Figma",60],["Button URL","link_url","https://…",300]].forEach(([lab,f,ph,max])=>{
+      [["Button label","link_text","e.g. View in Figma, GitHub Repo, Live Demo",60],["Button URL","link_url","https://…",300]].forEach(([lab,f,ph,max])=>{
         const l=mk("label","lf"); l.append(mk("span",null,lab)); l.append(linkInput(K,r,f,ph,max,refresh)); lf.append(l)});
-      lf.append(mk("p","lf-hint","Leave URL empty to hide."));
+      lf.append(mk("p","lf-hint","Leave the URL empty to hide the button. Saves automatically."));
       c.append(lf);
     }
     g.append(c)});return g},
@@ -965,29 +998,21 @@ const BUILD={
   certifications:(items,K)=>{const ul=mk("ul","r-cert");items.forEach(r=>{
     const li=ri("li","ritem",r);
     li.append(put(mk("div","hrow"),ed("b",null,K,r,"title","Certification / course"),ctl(K,r)));
-    const m=put(mk("div","meta"),ed("small",null,K,r,"subtitle","Issuer"),ed("small",null,K,r,"period","Date"));
+    const m=put(mk("div","meta"),ed("small",null,K,r,"subtitle","Issuer / platform"),ed("small",null,K,r,"period","Date"));
     if(m.children.length) li.append(m);
     put(li,ed("p",null,K,r,"details","Notes")); ul.append(li)});return ul},
   extracurriculars:(items,K)=>{const g=mk("div","r-xc");items.forEach(r=>{
     const x=ri("div","xc ritem",r);
-    x.append(put(mk("div","hrow"),ed("h4",null,K,r,"title","Group"),ctl(K,r)));
+    x.append(put(mk("div","hrow"),ed("h4",null,K,r,"title","Group (e.g. Clubs & Societies)"),ctl(K,r)));
     put(x,ed("p",null,K,r,"details","Details")); g.append(x)});return g}
 };
 
+/* ---- header & contact info (category "header") ---- */
 function renderHeader(){
   const h=R.header, K="header";
   const name=$("hname"), role=$("hrole"), ul=$("hcontact");
   name.innerHTML=""; role.innerHTML=""; ul.innerHTML="";
-  put(name,ed("span",null,K,h,"name","Your name")); put(role,ed("span",null,K,h,"role","Title"));
-  
-  // Avatar handling
-  const imgEl = $("avatar-img"), svgEl = $("avatar-svg");
-  if(h.avatar){
-    imgEl.src = h.avatar; imgEl.style.display = "block"; svgEl.style.display = "none";
-  } else {
-    imgEl.style.display = "none"; svgEl.style.display = "block";
-  }
-
+  put(name,ed("span",null,K,h,"name","Your name")); put(role,ed("span",null,K,h,"role","Title / tagline"));
   const li=(label,...nodes)=>{const l=document.createElement("li");l.append(mk("small",null,label));put(l,...nodes);ul.append(l)};
   let em=null;
   if(canEdit()) em=ed("div",null,K,h,"email","email address");
@@ -997,7 +1022,7 @@ function renderHeader(){
   h.phones.forEach((n,i)=>{
     if(canEdit()){
       const w=mk("span","ph1"); w.append(ed("span",null,K,h.phones,i,"phone"));
-      w.append(iconBtn("🗑️","Remove",async()=>{
+      w.append(iconBtn("🗑️","Remove phone number",async()=>{
         const res=await saveSection(K,next=>{next.phones.splice(i,1)});
         if(res.error){fail(res.error);return}
         renderHeader(); toast("Phone removed");
@@ -1011,55 +1036,33 @@ function renderHeader(){
     renderHeader(); const els=$("hcontact").querySelectorAll(".ph1 .redit"); if(els.length) els[els.length-1].focus();
   };ph.append(b)}
   li("Phone",ph);
-  li("Location",ed("span",null,K,h,"location","Location"));
+  li("Location",ed("span",null,K,h,"location","City, region, country"));
 }
 
-/* Avatar upload listener */
-const avatarBox = $("avatar-box"), avatarInput = document.createElement("input");
-avatarInput.type = "file"; avatarInput.accept = "image/*"; avatarInput.style.display = "none";
-document.body.append(avatarInput);
-
-avatarBox.onclick = () => {
-  if(!canEdit()) return;
-  avatarInput.click();
-};
-avatarInput.onchange = e => {
-  const file = e.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = async event => {
-    const base64Str = event.target.result;
-    const res = await saveSection("header", next => { next.avatar = base64Str; });
-    if(res.error){ fail(res.error); return; }
-    renderHeader();
-    toast("Profile photo updated successfully!");
-  };
-  reader.readAsDataURL(file);
-};
-
+/* ---- the whole resume ---- */
 function renderResume(){
   if(!R.header) return;
   renderHeader();
   const box=$("rbody"); box.innerHTML="";
   RCATS.forEach(cat=>{
     const isHidden=!!hidden[cat.key];
-    if(isHidden&&!adm()) return;
+    if(isHidden&&!adm()) return;                       // visitors never see hidden (is_visible = false) sections
     const items=R[cat.key];
     const sec=mk("div","rsec"+(items.length?"":" empty")+(isHidden?" is-hidden":""));
     if(cat.key==="education") sec.id="education-list";
     const head=mk("div","rsec-head"), left=mk("div","rsec-title");
     left.append(mk("h3",null,cat.title));
     const eye=mk("button","eye admin-only",isHidden?"🙈":"👁️"); eye.type="button";
-    eye.title=isHidden?"Hidden from visitors":"Visible to visitors";
-    eye.onclick=()=>toggleSection(cat.key);
+    eye.title=isHidden?"Hidden from visitors. Click to show":"Visible to visitors. Click to hide";
+    eye.setAttribute("aria-label",eye.title); eye.onclick=()=>toggleSection(cat.key);
     left.append(eye);
-    if(isHidden) left.append(mk("span","hbadge admin-only","Hidden"));
+    if(isHidden) left.append(mk("span","hbadge admin-only","Hidden from public"));
     head.append(left);
     if(canEdit()){const add=mk("button","pill admin-only",cat.add);add.type="button";add.onclick=()=>openForm(cat.key);head.append(add)}
     sec.append(head);
     const body=mk("div","rsec-body");
-    body.append(items.length?BUILD[cat.key](items,cat.key):mk("p","note","Nothing here yet."));
-    if(canEdit()&&(cat.key==="skills"||cat.key==="projects")) body.append(mk("p","thint","Click chip to dim/undim, double-click to rename, × to remove."));
+    body.append(items.length?BUILD[cat.key](items,cat.key):mk("p","note","Nothing here yet."+(canEdit()?" Use the Add button above to create the first entry.":"")));
+    if(canEdit()&&(cat.key==="skills"||cat.key==="projects")) body.append(mk("p","thint","Click a chip to dim / undim it · double-click to rename · × to remove · type in “+ add” to add more."));
     sec.append(body); box.append(sec);
   });
   $("abnote").hidden=!readErr; $("abnote").textContent=readErr;
@@ -1070,9 +1073,10 @@ function renderResume(){
   }
 }
 
+/* ---- load fresh data from Supabase on every page load ---- */
 async function loadResume(){
   R={}; hidden={}; readErr=""; tableEmpty=false;
-  R.header=normCat("header",null); KEYS.forEach(k=>{R[k]=normCat(k,null)});
+  R.header=normCat("header",null); KEYS.forEach(k=>{R[k]=normCat(k,null)});      // fallback only until the database answers
   if(sb){
     const {data,error}=await sb.from(RT).select("*");
     if(error){console.error(error);readErr="Couldn’t read resume_data: "+error.message}
@@ -1088,17 +1092,19 @@ async function loadResume(){
   renderResume();
   if(isAdmin){ if(tableEmpty) seedDefaults(); verifyPublic(); }
 }
+/* brand-new empty table: store the starting resume once so everything afterwards comes from the database */
 let seeding=false;
 async function seedDefaults(){
   if(!sb||!isAdmin||seeding||!tableEmpty) return; seeding=true;
   const rows=[{category:"header",content:R.header,is_visible:true},...KEYS.map(k=>({category:k,content:R[k],is_visible:!hidden[k]}))];
   const res=await dbw(sb.from(RT).upsert(rows,{onConflict:"category"}).select());
   seeding=false;
-  if(res.error){fail("Couldn’t create initial rows: "+res.error);return}
-  tableEmpty=false; toast("Resume saved to database");
+  if(res.error){fail("Couldn’t create the initial resume rows: "+res.error);return}
+  tableEmpty=false; toast("Resume saved to the database");
 }
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",loadResume); else loadResume();
 
+/* does a logged-out visitor really see what the admin saved? (separate anonymous client) */
 let pubClient=null, pubTimer=0;
 function verifyPublic(){
   clearTimeout(pubTimer);
@@ -1108,21 +1114,29 @@ function verifyPublic(){
     try{
       pubClient=pubClient||supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
       const {data,error}=await pubClient.from(RT).select("category,is_visible");
-      if(error||!data) msg="⚠ Visitors can’t read resume_data.";
-      else{ msg="✓ Visitors see your saved resume."; }
-    }catch(e){msg="⚠ Error checking public view."}
+      if(error||!data) msg="⚠ Visitors can’t read resume_data"+(error?" ("+error.message+")":"")+", so they see the default resume. Run the SQL policy fix.";
+      else{
+        const seen={}; data.forEach(r=>{seen[r.category]=r.is_visible===false});
+        const bad=RCATS.filter(c=>!!hidden[c.key]!==!!seen[c.key]);
+        if(!data.length) msg="ℹ Nothing is saved yet, so visitors see the default resume.";
+        else if(bad.length) msg="⚠ Visitors don’t see your latest hide/show settings yet.";
+        else msg="✓ Visitors see exactly what you saved.";
+      }
+    }catch(e){msg="⚠ Couldn’t check the public view: "+e.message}
     el.textContent=msg; el.hidden=!msg;
   },300);
 }
 
+/* ---- section visibility (is_visible column) ---- */
 async function toggleSection(key){
   if(!sb||!isAdmin) return;
   const hide=!hidden[key];
-  const res=await saveSection(key,()=>{},hide);
+  const res=await saveSection(key,()=>{},hide);          // waits for Supabase before the UI changes
   if(res.error){fail(res.error);return}
-  renderResume(); toast(hide?"Section hidden":"Section visible"); verifyPublic();
+  renderResume(); toast(hide?"Section hidden from visitors":"Section visible to visitors again"); verifyPublic();
 }
 
+/* ---- add / edit dialog (same pattern as “Add a skill”) ---- */
 const rdlg=$("rdlg"), rform=$("rform"), rfields=$("rfields"), rerr=$("rerr"), rsave=$("rsave"); let formCat=null, formItem=null;
 function openForm(key,item){
   if(!canEdit()) return;
@@ -1139,7 +1153,7 @@ function openForm(key,item){
 rform.addEventListener("submit",async e=>{
   e.preventDefault(); if(!canEdit()||!formCat) return;
   const vals={}; formCat.f.forEach(([f])=>{let v=rform.elements[f].value.trim(); if(f==="tags"||f==="learning") v=csv(v).join(", "); vals[f]=v});
-  if(!vals.title){rerr.textContent="Please fill in required fields.";return}
+  if(!vals.title){rerr.textContent="Please fill in the required field.";return}
   const key=formCat.key, editing=formItem, id=editing?editing.id:uid();
   rsave.disabled=true; rerr.textContent="";
   const res=await saveSection(key,next=>{
@@ -1148,7 +1162,7 @@ rform.addEventListener("submit",async e=>{
   });
   rsave.disabled=false;
   if(res.error){rerr.textContent="Couldn’t save: "+res.error;fail(res.error);return}
-  rdlg.close(); flashId=id; renderResume(); toast(editing?"Saved":"Added");
+  rdlg.close(); flashId=id; renderResume(); toast(editing?"Saved “"+vals.title+"”":"Added “"+vals.title+"”");
 });
 async function removeItem(key,item){
   if(!confirm(`Delete “${item.title||"this item"}”?`)) return;
@@ -1161,11 +1175,89 @@ $("previewbtn").onclick=()=>{
   $("previewbtn").textContent=preview?"Exit preview":"Preview as visitor"; renderResume();
 };
 
+/* theme + scroll */
 const root=document.documentElement; let saved=null; try{saved=localStorage.getItem("theme")}catch(e){}
 root.dataset.theme=saved||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");
 $("theme").onclick=()=>{root.dataset.theme=root.dataset.theme==="dark"?"light":"dark";try{localStorage.setItem("theme",root.dataset.theme)}catch(e){}};
 addEventListener("scroll",()=>{const h=document.documentElement;$("progress").style.transform=`scaleX(${h.scrollTop/(h.scrollHeight-h.clientHeight||1)})`},{passive:true});
 $("year").textContent=new Date().getFullYear();
+ 
+/* ====== animated background: domain-warped fBm shader (WebGL), theme-aware, CSS orbs as fallback ====== */
+(function(){
+  const cv=$("gl"); if(!cv) return;
+  const gl=cv.getContext("webgl",{alpha:false,antialias:false,depth:false,stencil:false,powerPreference:"low-power",preserveDrawingBuffer:false});
+  if(!gl) return;
+  const VS="attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}";
+  const FS=`precision mediump float;
+uniform vec2 r,m;uniform float t,k;uniform vec3 bg,ca,cb,cc;
+float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+  return mix(mix(h(i),h(i+vec2(1.,0.)),f.x),mix(h(i+vec2(0.,1.)),h(i+vec2(1.,1.)),f.x),f.y);}
+float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*n(p);p=p*2.03+vec2(1.7,9.2);a*=.5;}return v;}
+void main(){
+  vec2 uv=gl_FragCoord.xy/r;
+  vec2 p=(uv-.5)*vec2(r.x/r.y,1.)*1.5+m*.12;
+  float s=t*.035;
+  vec2 q=vec2(fbm(p+vec2(0.,s)),fbm(p+vec2(5.2,1.3)-s));
+  vec2 w=vec2(fbm(p+2.6*q+vec2(1.7,9.2)+s*1.3),fbm(p+2.6*q+vec2(8.3,2.8)-s*1.1));
+  float f=fbm(p+2.6*w);
+  vec3 col=mix(ca,cb,smoothstep(.15,.85,q.x));
+  col=mix(col,cc,smoothstep(.25,.95,w.y)*.85);
+  float a=smoothstep(.22,.88,f)*k;
+  vec3 o=mix(bg,col,a);
+  o+=(h(gl_FragCoord.xy)-.5)/255.;
+  gl_FragColor=vec4(o,1.);
+}`;
+  const sh=(type,src)=>{const o=gl.createShader(type);gl.shaderSource(o,src);gl.compileShader(o);return gl.getShaderParameter(o,gl.COMPILE_STATUS)?o:null};
+  const vs=sh(gl.VERTEX_SHADER,VS), fs=sh(gl.FRAGMENT_SHADER,FS); if(!vs||!fs) return;
+  const pg=gl.createProgram(); gl.attachShader(pg,vs); gl.attachShader(pg,fs); gl.linkProgram(pg);
+  if(!gl.getProgramParameter(pg,gl.LINK_STATUS)) return;
+  gl.useProgram(pg);
+  const buf=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  const loc=gl.getAttribLocation(pg,"a"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+  const U={}; ["r","m","t","k","bg","ca","cb","cc"].forEach(n=>U[n]=gl.getUniformLocation(pg,n));
+
+  const hex=v=>{v=(v||"").trim().replace("#","");if(v.length===3)v=[...v].map(c=>c+c).join("");const n=parseInt(v,16)||0;return[(n>>16&255)/255,(n>>8&255)/255,(n&255)/255]};
+  const names=["--gl-bg","--gl-a","--gl-b","--gl-c"], keys=["bg","ca","cb","cc"];
+  let cur=null, tgt=null;
+  const readTheme=()=>{
+    const cs=getComputedStyle(root);
+    tgt={k:parseFloat(cs.getPropertyValue("--gl-k"))||.6}; names.forEach((n,i)=>tgt[keys[i]]=hex(cs.getPropertyValue(n)));
+    if(!cur) cur=JSON.parse(JSON.stringify(tgt));
+  };
+  const ease=amt=>{let moving=false;
+    keys.forEach(k=>{for(let i=0;i<3;i++){const d=tgt[k][i]-cur[k][i];if(Math.abs(d)>.001){cur[k][i]+=d*amt;moving=true}else cur[k][i]=tgt[k][i]}});
+    const d=tgt.k-cur.k; if(Math.abs(d)>.001){cur.k+=d*amt;moving=true}else cur.k=tgt.k;
+    return moving};
+
+  const SCALE=.5; let W=1,H=1,time=Math.random()*50,raf=0,last=0,mx=0,my=0,tx=0,ty=0;
+  function size(){
+    W=Math.max(2,Math.round(innerWidth*SCALE)); H=Math.max(2,Math.round(innerHeight*SCALE));
+    cv.width=W; cv.height=H; gl.viewport(0,0,W,H); draw();
+  }
+  function draw(){
+    gl.uniform2f(U.r,W,H); gl.uniform2f(U.m,mx,my); gl.uniform1f(U.t,time); gl.uniform1f(U.k,cur.k);
+    keys.forEach(k=>gl.uniform3fv(U[k],cur[k]));
+    gl.drawArrays(gl.TRIANGLES,0,3);
+  }
+  function frame(now){
+    raf=requestAnimationFrame(frame);
+    if(now-last<33) return;                              // ~30fps is plenty for slow ambient motion
+    const dt=Math.min((now-last)/1000,.1); last=now; time+=dt;
+    mx+=(tx-mx)*.04; my+=(ty-my)*.04; ease(.08); draw();
+  }
+  const start=()=>{if(!raf&&!reduce){last=performance.now();raf=requestAnimationFrame(frame)}};
+  const stop=()=>{cancelAnimationFrame(raf);raf=0};
+
+  readTheme(); size(); root.classList.add("gl"); start();
+  addEventListener("resize",size);
+  addEventListener("pointermove",e=>{tx=(e.clientX/innerWidth-.5)*2;ty=(.5-e.clientY/innerHeight)*2},{passive:true});
+  document.addEventListener("visibilitychange",()=>document.hidden?stop():start());
+  new MutationObserver(()=>{readTheme(); if(reduce){cur=JSON.parse(JSON.stringify(tgt));draw()}}).observe(root,{attributes:true,attributeFilter:["data-theme"]});
+  cv.addEventListener("webglcontextlost",e=>{e.preventDefault();stop();root.classList.remove("gl")});
+  cv.addEventListener("webglcontextrestored",()=>location.reload());
+})();
 
 loadSkills(); loadContent(); loadLinks();
 </script>
@@ -1177,6 +1269,7 @@ function marqueeFallback(){
 }
 setTimeout(marqueeFallback,2500);
 
+/* 3D laser lattice: layered grid receding to a vanishing point, thin beams, particles gliding along them */
 (function(){
   const cv=document.getElementById("lasers"); if(!cv) return;
   const ctx=cv.getContext("2d"), root=document.documentElement;
@@ -1196,7 +1289,7 @@ setTimeout(marqueeFallback,2500);
     if(!col.dark) col.b=col.a;
   }
   const rgba=(c,a)=>"rgba("+c[0]+","+c[1]+","+c[2]+","+Math.max(0,a).toFixed(3)+")";
-  const fog=d=>Math.min(1,Math.max(0,(d-650)/1500));
+  const fog=d=>Math.min(1,Math.max(0,(d-650)/1500)); // 0 near .. 1 far
 
   function build(){
     const r=rng(11), cell=W<700?125:W<1100?165:195, ext=1.5;
@@ -1243,6 +1336,7 @@ setTimeout(marqueeFallback,2500);
       ctx.globalCompositeOperation="source-over";
       ctx.strokeStyle=rgba(col.a,cA*(fa+fb)/2); ctx.lineWidth=Math.max(.3,.55*w); ctx.stroke();
     });
+    // nodes
     nodes.forEach(n=>{
       const p=n.p; if(p.x<-m||p.x>W+m||p.y<-m||p.y>H+m) return;
       const f=1-fog(p.d)*.9, pl=.5+.5*Math.sin(time*.0008+n.ph), r=(1.2+.6*pl)*p.k;
@@ -1255,6 +1349,7 @@ setTimeout(marqueeFallback,2500);
       }
       ctx.fillStyle=rgba(col.a,.5*f); ctx.beginPath(); ctx.arc(p.x,p.y,Math.max(.7,r),0,6.283); ctx.fill();
     });
+    // particles
     parts.forEach(q=>{
       const a=q.e.a.p,b=q.e.b.p, f=q.v>0?q.t:1-q.t, x=a.x+(b.x-a.x)*f, y=a.y+(b.y-a.y)*f;
       if(x<-m||x>W+m||y<-m||y>H+m) return;

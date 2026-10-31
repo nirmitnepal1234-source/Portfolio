@@ -1,3 +1,7 @@
+Claude
+
+
+Index · HTML
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -108,6 +112,20 @@ body.admin [data-edit]:focus{outline:2px solid var(--g2);background:var(--glow)}
 .rcontact a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line);transition:border-color .2s,color .2s}
 .rcontact a:hover{border-color:var(--g2);color:var(--g2)}
 .rlinks{display:flex;flex-wrap:wrap;gap:10px}
+/* profile photo frame */
+.rid{display:flex;align-items:center;gap:22px;min-width:0}
+.avwrap{position:relative;flex:none}
+.avatar{position:relative;display:grid;place-items:center;width:112px;height:112px;padding:0;border-radius:50%;border:2px solid var(--line);background:var(--soft);color:var(--g2);overflow:hidden;box-shadow:var(--shadow);transition:border-color .2s,box-shadow .2s,opacity .2s}
+.avatar img,.avatar svg{width:100%;height:100%;display:block}
+.avatar img{object-fit:cover}
+.avatar.editable{cursor:pointer}
+.avatar.editable:hover,.avatar.editable:focus-visible{border-color:var(--g2);box-shadow:0 0 0 4px var(--glow)}
+.avatar .cam{position:absolute;left:0;right:0;bottom:0;height:34%;display:grid;place-items:center;background:color-mix(in srgb,var(--g1) 74%,transparent);color:var(--on-accent);font:600 .72rem var(--font);opacity:0;transition:opacity .2s}
+.avatar.editable:hover .cam,.avatar.editable:focus-visible .cam{opacity:1}
+@media (hover:none){.avatar.editable .cam{opacity:1}}
+.avatar.busy{opacity:.55;pointer-events:none}
+.avrm{position:absolute;top:-4px;right:-4px;width:28px;height:28px;font-size:.75rem}
+@media (max-width:560px){.avatar{width:88px;height:88px}.rid{gap:16px}}
 .chip.sm{min-height:38px;padding:7px 15px;font-size:.88rem;box-shadow:none}
 .chip.sm .ico{width:17px;height:17px}
 .rsec{padding:38px 0;border-bottom:1px solid var(--line)}
@@ -325,7 +343,7 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
 @media (max-width:340px){.tiers{grid-template-columns:1fr}}
 @media (hover:none){.card:hover,.tier:hover{transform:none}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition-duration:.01ms!important}h1 .ch{transform:none;opacity:1}}
-
+ 
 /* full-page 3D laser scene (replaces the old smoky gradient) */
 #lasers{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
 </style>
@@ -386,13 +404,17 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
   <section id="resume"><div class="wrap">
     <h2>Resume &amp; background</h2>
     <p class="lead">Where I study, what I build with and what I’m still learning.</p>
-
+ 
     <header class="rhead">
       <div class="rtop">
-        <div>
-          <h3 class="rname" id="hname"></h3>
-          <p class="rrole" id="hrole"></p>
+        <div class="rid">
+          <div class="avwrap" id="avwrap"></div>
+          <div>
+            <h3 class="rname" id="hname"></h3>
+            <p class="rrole" id="hrole"></p>
+          </div>
         </div>
+        <input type="file" id="avfile" accept="image/*" hidden>
         <div class="ractions">
           <a class="btn" href="resume.pdf" download="Nirmit-Nepal-Resume.pdf"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download Resume</a>
           <a class="btn ghost" href="resume.pdf" target="_blank" rel="noopener noreferrer">View</a>
@@ -401,10 +423,10 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
       <ul class="rcontact" id="hcontact"></ul>
       <div class="rlinks" id="rlinks"></div>
     </header>
-
+ 
     <div id="rbody"></div>
   </div></section>
-
+ 
   <section id="contact" class="contact"><div class="wrap">
     <h2>Let’s build something</h2>
     <p class="lead" data-edit="contact_lead">Questions, ideas or opportunities are all welcome.</p>
@@ -447,7 +469,7 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
     <div class="actions"><button type="button" class="pill" data-close>Cancel</button><button class="btn" id="rsave">Add</button></div>
   </form>
 </dialog>
-
+ 
 <dialog id="ldlg">
   <form id="lform">
     <h3>Admin login</h3>
@@ -540,8 +562,8 @@ async function loadSkills(){
   if(!sb){skills=SAMPLE;view();return}
   grid.innerHTML='<li class="card skel"></li><li class="card skel"></li>';
   const {data,error}=await sb.from("skills").select("*").order("sort_order").order("created_at");
-  if(error){grid.innerHTML="";$("count").textContent="Couldn’t load skills. Check your Supabase setup and refresh.";console.error(error);marqueeFallback();return}
-  skills=data; view(); if(!skills.length) marqueeFallback();
+  if(error){grid.innerHTML="";$("count").textContent="Couldn’t load skills. Check your Supabase setup and refresh.";console.error(error);window.marqueeFallback&&marqueeFallback();return}
+  skills=data; view(); if(!skills.length&&window.marqueeFallback) marqueeFallback();
 }
 async function loadContent(){
   if(!sb) return;
@@ -592,9 +614,9 @@ $("savetext").onclick=async()=>{
   if(error){alert(error.message);return}
   toast("Page text saved");
 };
-
-
-
+ 
+ 
+ 
  
 /* ====== Auth ====== */
 function setAdmin(on){
@@ -758,7 +780,7 @@ const RCATS=[
 ];
 const KEYS=RCATS.map(c=>c.key);
 const DEFAULTS={
-  header:{name:"Nirmit Nepal",role:"CSE Student | Aspiring Software Developer",email:"nirmitnepal1234@gmail.com",phones:["+91 9234179508","+977 9803080969"],location:"Yelahanka, Bengaluru, Karnataka, India"},
+  header:{name:"Nirmit Nepal",role:"CSE Student | Aspiring Software Developer",email:"nirmitnepal1234@gmail.com",phones:["+91 9234179508","+977 9803080969"],location:"Yelahanka, Bengaluru, Karnataka, India",avatar:""},
   education:[
     {title:"B.M.S. Institute of Technology and Management (BMSIT&M), VTU",subtitle:"B.E. / B.Tech in CSE · 1st semester",period:"2026 – 2030",location:"Bengaluru, Karnataka, India"},
     {title:"Himalayan Whitehouse International College",subtitle:"+2 Science · NEB High School Diploma",period:"2025",location:"Kathmandu, Nepal"},
@@ -778,14 +800,14 @@ const DEFAULTS={
   certifications:[{title:"--"}],
   extracurriculars:[{title:"Coding Platforms",details:"--"},{title:"Clubs & Societies",details:"--"},{title:"Competitions & Events",details:"--"}]
 };
-
+ 
 /* ---- state (always rebuilt from the database on load) ---- */
 let R={}, hidden={}, readErr="", preview=false, flashId=null, pending=0, tableEmpty=false;
 const adm=()=>isAdmin&&!preview;
 const canEdit=()=>!!(adm()&&sb);
 const clone=o=>JSON.parse(JSON.stringify(o));
 const uid=()=>Math.random().toString(36).slice(2,10);
-
+ 
 /* ---- normalising whatever is stored (accepts older / differently named fields) ---- */
 const AL={title:["title","institution","name","school","project","language","course","group"],subtitle:["subtitle","degree","program","programme","level","issuer","platform"],period:["period","years","timeline","date","year"],location:["location"],tags:["tags","tech_stack","techStack","stack","technologies","skills","items"],learning:["learning"],details:["details","description","desc","notes"],link_text:["link_text","linkText","button_text","buttonText"],link_url:["link_url","linkUrl","url","link","href"]};
 const pick=(o,names)=>{for(const n of names){const v=o[n];if(v!=null&&v!=="") return Array.isArray(v)?v.join(", "):String(v)}return ""};
@@ -803,12 +825,13 @@ function normCat(key,c){
   if(key==="header"){
     c=(c&&typeof c==="object"&&!Array.isArray(c))?c:{};
     const d=DEFAULTS.header, ph=Array.isArray(c.phones)?c.phones:(c.phones||c.phone?String(c.phones||c.phone).split(/\s*[\/,|]\s*/):d.phones);
-    return {name:c.name||d.name,role:c.role||c.title||d.role,email:c.email||d.email,phones:ph.map(String).filter(Boolean),location:c.location||d.location};
+    const av=(typeof c.avatar==="string"&&/^(data:image\/(png|jpe?g|webp|gif);base64,|https:\/\/)/i.test(c.avatar))?c.avatar:"";   // photo is optional; anything unexpected falls back to the silhouette
+    return {name:c.name||d.name,role:c.role||c.title||d.role,email:c.email||d.email,phones:ph.map(String).filter(Boolean),location:c.location||d.location,avatar:av};
   }
   const cat=RCATS.find(k=>k.key===key);
   return Array.isArray(c)?c.map(x=>normItem(cat,x)):clone(DEFAULTS[key]).map(x=>normItem(cat,x));
 }
-
+ 
 /* ---- tiny DOM helpers ---- */
 function setTxt(e,t){e.textContent=t; if((t||"").trim()==="--") e.classList.add("ph")}
 function mk(tag,cls,txt){const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) setTxt(e,txt); return e}
@@ -820,7 +843,7 @@ addEventListener("beforeunload",e=>{if(pending){e.preventDefault();e.returnValue
 function fail(msg){
   alert(msg+(/is_visible/.test(msg)?"\n\nAdd the column in Supabase:\nalter table resume_data add column if not exists is_visible boolean default true;":""));
 }
-
+ 
 /* ---- database ---- */
 async function dbw(q){
   const {data,error}=await q;
@@ -850,7 +873,7 @@ function setField(next,key,obj,f,v){
   if(key==="header"){ if(Array.isArray(obj)) next.phones[f]=v; else next[f]=v; return }
   const it=next.find(x=>x.id===obj.id); if(it) it[f]=v;
 }
-
+ 
 /* ---- inline-editable text: saved to Supabase when you leave the field ---- */
 function ed(tag,cls,key,obj,f,ph,onSaved){
   const v=obj[f]||"";
@@ -879,7 +902,7 @@ function ctl(key,item,onlyDelete){
   return c;
 }
 const chips=(csvStr,cls)=>csv(csvStr).map(x=>mk("span",cls||"tag",x));
-
+ 
 /* chip editor for Technical skills + Projects: click = dim / undim, double-click = rename, × = remove, input = add */
 function tagBox(key,item,cls){
   const box=mk("div","tagbox"+(cls?" "+cls:""));
@@ -925,7 +948,7 @@ function tagBox(key,item,cls){
   };
   paint(); return box;
 }
-
+ 
 /* plain input for the project link label / URL: saved with upsert (saveSection) when you leave the field */
 function linkInput(key,obj,f,ph,max,onSaved){
   const i=document.createElement("input");
@@ -953,7 +976,7 @@ function linkBtn(r){
   a.innerHTML=svgIcon("link"); const t=document.createElement("span"); t.textContent=(r.link_text||"").trim()||"View project"; a.append(t);
   return a;
 }
-
+ 
 /* ---- section builders ---- */
 const BUILD={
   education:(items,K)=>{const ol=mk("ol","r-edu");items.forEach(r=>{
@@ -1006,12 +1029,13 @@ const BUILD={
     x.append(put(mk("div","hrow"),ed("h4",null,K,r,"title","Group (e.g. Clubs & Societies)"),ctl(K,r)));
     put(x,ed("p",null,K,r,"details","Details")); g.append(x)});return g}
 };
-
+ 
 /* ---- header & contact info (category "header") ---- */
 function renderHeader(){
   const h=R.header, K="header";
   const name=$("hname"), role=$("hrole"), ul=$("hcontact");
   name.innerHTML=""; role.innerHTML=""; ul.innerHTML="";
+  renderAvatar();
   put(name,ed("span",null,K,h,"name","Your name")); put(role,ed("span",null,K,h,"role","Title / tagline"));
   const li=(label,...nodes)=>{const l=document.createElement("li");l.append(mk("small",null,label));put(l,...nodes);ul.append(l)};
   let em=null;
@@ -1038,7 +1062,60 @@ function renderHeader(){
   li("Phone",ph);
   li("Location",ed("span",null,K,h,"location","City, region, country"));
 }
-
+ 
+/* ---- profile photo (stored inside the "header" row of resume_data as content.avatar, a small JPEG data URL) ---- */
+const SILHOUETTE='<svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M60 22c-14 0-22 10-22 25 0 15 8 27 22 27s22-12 22-27c0-15-8-25-22-25z"/><path d="M38 46c-1-16 9-26 23-26 14 0 23 9 21 26-3-9-11-15-22-15-10 0-18 5-22 15z"/><path d="M38 50c-5 0-5 8 0 8M82 50c5 0 5 8 0 8"/><path d="M52 72v12M68 72v12"/><path d="M18 120c2-17 17-28 34-36l8 9 8-9c17 8 32 19 34 36"/></svg>';
+function silhouette(){const d=document.createElement("span");d.style.display="contents";d.innerHTML=SILHOUETTE;return d}
+function renderAvatar(){
+  const w=$("avwrap"); if(!w) return; w.innerHTML="";
+  const h=R.header, edit=canEdit();
+  const av=document.createElement(edit?"button":"div"); av.className="avatar"+(edit?" editable":"");
+  if(edit){av.type="button";av.title="Click to upload a profile photo";av.setAttribute("aria-label","Upload or change profile photo")}
+  else{av.setAttribute("role","img");av.setAttribute("aria-label",(h.name||"Profile")+" profile photo")}
+  if(h.avatar){
+    const im=new Image(); im.alt=""; im.decoding="async"; im.src=h.avatar;
+    im.onerror=()=>im.replaceWith(silhouette());
+    av.append(im);
+  }else av.append(silhouette());
+  if(edit){ av.append(mk("span","cam",h.avatar?"Change photo":"Add photo")); av.onclick=()=>$("avfile").click(); }
+  w.append(av);
+  if(edit&&h.avatar){
+    const rm=iconBtn("✕","Remove profile photo",async()=>{
+      if(!confirm("Remove your profile photo and go back to the silhouette?")) return;
+      const res=await saveSection("header",next=>{next.avatar=""});
+      if(res.error){fail("Couldn’t remove the photo: "+res.error);return}
+      renderHeader(); toast("Profile photo removed");
+    });
+    rm.classList.add("avrm"); w.append(rm);
+  }
+}
+/* crop to a centred square, shrink and compress so the row stays small */
+function shrinkImage(file,max){
+  return new Promise((ok,no)=>{
+    const u=URL.createObjectURL(file), im=new Image();
+    im.onload=()=>{
+      URL.revokeObjectURL(u);
+      const s=Math.min(im.naturalWidth,im.naturalHeight), o=Math.min(max,s); if(!s){no(new Error("empty"));return}
+      const c=document.createElement("canvas"); c.width=c.height=o; const x=c.getContext("2d");
+      x.fillStyle="#fff"; x.fillRect(0,0,o,o);
+      x.drawImage(im,(im.naturalWidth-s)/2,(im.naturalHeight-s)/2,s,s,0,0,o,o);
+      ok(c.toDataURL("image/jpeg",.86));
+    };
+    im.onerror=()=>{URL.revokeObjectURL(u);no(new Error("decode"))};
+    im.src=u;
+  });
+}
+$("avfile").addEventListener("change",async e=>{
+  const f=e.target.files&&e.target.files[0]; e.target.value=""; if(!f||!canEdit()) return;
+  if(!/^image\//.test(f.type)){fail("Please choose an image file (JPG, PNG or WebP).");return}
+  if(f.size>25*1024*1024){fail("That image is over 25 MB. Please pick a smaller one.");return}
+  const av=document.querySelector("#avwrap .avatar"); if(av) av.classList.add("busy");
+  let url; try{url=await shrinkImage(f,480)}catch(err){if(av) av.classList.remove("busy");fail("Couldn’t read that image. Try a JPG, PNG or WebP file.");return}
+  const res=await saveSection("header",next=>{next.avatar=url});
+  if(res.error){fail("Couldn’t save the photo: "+res.error); if(av) av.classList.remove("busy"); return}
+  renderHeader(); toast("Profile photo saved");
+});
+ 
 /* ---- the whole resume ---- */
 function renderResume(){
   if(!R.header) return;
@@ -1072,7 +1149,7 @@ function renderResume(){
     flashId=null;
   }
 }
-
+ 
 /* ---- load fresh data from Supabase on every page load ---- */
 async function loadResume(){
   R={}; hidden={}; readErr=""; tableEmpty=false;
@@ -1103,7 +1180,7 @@ async function seedDefaults(){
   tableEmpty=false; toast("Resume saved to the database");
 }
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",loadResume); else loadResume();
-
+ 
 /* does a logged-out visitor really see what the admin saved? (separate anonymous client) */
 let pubClient=null, pubTimer=0;
 function verifyPublic(){
@@ -1126,7 +1203,7 @@ function verifyPublic(){
     el.textContent=msg; el.hidden=!msg;
   },300);
 }
-
+ 
 /* ---- section visibility (is_visible column) ---- */
 async function toggleSection(key){
   if(!sb||!isAdmin) return;
@@ -1135,7 +1212,7 @@ async function toggleSection(key){
   if(res.error){fail(res.error);return}
   renderResume(); toast(hide?"Section hidden from visitors":"Section visible to visitors again"); verifyPublic();
 }
-
+ 
 /* ---- add / edit dialog (same pattern as “Add a skill”) ---- */
 const rdlg=$("rdlg"), rform=$("rform"), rfields=$("rfields"), rerr=$("rerr"), rsave=$("rsave"); let formCat=null, formItem=null;
 function openForm(key,item){
@@ -1174,7 +1251,7 @@ $("previewbtn").onclick=()=>{
   preview=!preview; document.body.classList.toggle("preview",preview);
   $("previewbtn").textContent=preview?"Exit preview":"Preview as visitor"; renderResume();
 };
-
+ 
 /* theme + scroll */
 const root=document.documentElement; let saved=null; try{saved=localStorage.getItem("theme")}catch(e){}
 root.dataset.theme=saved||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");
@@ -1217,7 +1294,7 @@ void main(){
   gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
   const loc=gl.getAttribLocation(pg,"a"); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
   const U={}; ["r","m","t","k","bg","ca","cb","cc"].forEach(n=>U[n]=gl.getUniformLocation(pg,n));
-
+ 
   const hex=v=>{v=(v||"").trim().replace("#","");if(v.length===3)v=[...v].map(c=>c+c).join("");const n=parseInt(v,16)||0;return[(n>>16&255)/255,(n>>8&255)/255,(n&255)/255]};
   const names=["--gl-bg","--gl-a","--gl-b","--gl-c"], keys=["bg","ca","cb","cc"];
   let cur=null, tgt=null;
@@ -1230,7 +1307,7 @@ void main(){
     keys.forEach(k=>{for(let i=0;i<3;i++){const d=tgt[k][i]-cur[k][i];if(Math.abs(d)>.001){cur[k][i]+=d*amt;moving=true}else cur[k][i]=tgt[k][i]}});
     const d=tgt.k-cur.k; if(Math.abs(d)>.001){cur.k+=d*amt;moving=true}else cur.k=tgt.k;
     return moving};
-
+ 
   const SCALE=.5; let W=1,H=1,time=Math.random()*50,raf=0,last=0,mx=0,my=0,tx=0,ty=0;
   function size(){
     W=Math.max(2,Math.round(innerWidth*SCALE)); H=Math.max(2,Math.round(innerHeight*SCALE));
@@ -1249,7 +1326,7 @@ void main(){
   }
   const start=()=>{if(!raf&&!reduce){last=performance.now();raf=requestAnimationFrame(frame)}};
   const stop=()=>{cancelAnimationFrame(raf);raf=0};
-
+ 
   readTheme(); size(); root.classList.add("gl"); start();
   addEventListener("resize",size);
   addEventListener("pointermove",e=>{tx=(e.clientX/innerWidth-.5)*2;ty=(.5-e.clientY/innerHeight)*2},{passive:true});
@@ -1258,7 +1335,7 @@ void main(){
   cv.addEventListener("webglcontextlost",e=>{e.preventDefault();stop();root.classList.remove("gl")});
   cv.addEventListener("webglcontextrestored",()=>location.reload());
 })();
-
+ 
 loadSkills(); loadContent(); loadLinks();
 </script>
 <script>
@@ -1268,7 +1345,7 @@ function marqueeFallback(){
   for(let k=0;k<4;k++) names.forEach(n=>{const sp=document.createElement("span");sp.textContent=n;t.append(sp)});
 }
 setTimeout(marqueeFallback,2500);
-
+ 
 /* 3D laser lattice: layered grid receding to a vanishing point, thin beams, particles gliding along them */
 (function(){
   const cv=document.getElementById("lasers"); if(!cv) return;
@@ -1278,7 +1355,7 @@ setTimeout(marqueeFallback,2500);
   let col={a:[42,138,86],b:[111,191,90],dark:false};
   const nodes=[],edges=[],parts=[];
   const FOV=760, CAM=1150, L=5, ZN=-450, ZF=800;
-
+ 
   function rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
   function hex(v,fb){const m=/^#?([0-9a-f]{6})$/i.exec((v||"").trim());if(!m)return fb;const n=parseInt(m[1],16);return[n>>16&255,n>>8&255,n&255]}
   function readTheme(){
@@ -1290,7 +1367,7 @@ setTimeout(marqueeFallback,2500);
   }
   const rgba=(c,a)=>"rgba("+c[0]+","+c[1]+","+c[2]+","+Math.max(0,a).toFixed(3)+")";
   const fog=d=>Math.min(1,Math.max(0,(d-650)/1500)); // 0 near .. 1 far
-
+ 
   function build(){
     const r=rng(11), cell=W<700?125:W<1100?165:195, ext=1.5;
     const cols=Math.ceil(W*ext/cell)+1, rows=Math.ceil(H*ext/cell)+1;
@@ -1315,7 +1392,7 @@ setTimeout(marqueeFallback,2500);
       add(n,idx[l+1]&&idx[l+1][i][j],.22);
     }
   }
-
+ 
   function draw(){
     ctx.clearRect(0,0,W,H);
     const yaw=Math.sin(time*.00007)*.08+mx*.07+(sc-.5)*.1, pitch=Math.sin(time*.00005)*.04+my*.045+(sc-.5)*.12;
@@ -1363,7 +1440,7 @@ setTimeout(marqueeFallback,2500);
     });
     ctx.globalCompositeOperation="source-over";
   }
-
+ 
   function readScroll(){const h=document.documentElement.scrollHeight-innerHeight; scT=h>0?Math.min(1,Math.max(0,scrollY/h)):0}
   function size(){
     W=innerWidth; H=innerHeight; dpr=Math.min(devicePixelRatio||1,2);
@@ -1378,7 +1455,7 @@ setTimeout(marqueeFallback,2500);
     draw(); raf=requestAnimationFrame(step);
   }
   function start(){ if(!reduce&&!raf&&visible){last=0;raf=requestAnimationFrame(step)} }
-
+ 
   readTheme(); size(); start();
   addEventListener("resize",size);
   addEventListener("scroll",()=>{readScroll(); if(reduce){sc=scT;draw()}},{passive:true});
@@ -1389,3 +1466,7 @@ setTimeout(marqueeFallback,2500);
 </script>
 </body>
 </html>
+ 
+
+
+Claude finished the response

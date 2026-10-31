@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 :root{
   --bg:#f4f8f2; --card:#ffffff; --ink:#0f2418; --muted:#4a6153; --line:#d2e0d4;
@@ -342,6 +343,13 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
  
 /* full-page 3D laser scene (replaces the old smoky gradient) */
 #lasers{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+
+/* content panels: keep text legible over the animated laser background */
+#about>.wrap,#skills>.wrap,#resume>.wrap,#contact>.wrap{position:relative;isolation:isolate;background:color-mix(in srgb,var(--bg) 88%,transparent);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:28px;padding:clamp(22px,4vw,44px);box-shadow:var(--shadow)}
+main>section[id]{padding-top:clamp(20px,3vw,34px)}
+.marquee{background:color-mix(in srgb,var(--bg) 72%,transparent)}
+[data-pdf][aria-busy=true]{opacity:.65;pointer-events:none;cursor:progress}
+@media print{#lasers{display:none}}
 </style>
 </head>
 <body>
@@ -412,8 +420,8 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
         </div>
         <input type="file" id="avfile" accept="image/*" hidden>
         <div class="ractions">
-          <a class="btn" href="resume.pdf" download="Nirmit-Nepal-Resume.pdf"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download Resume</a>
-          <a class="btn ghost" href="resume.pdf" target="_blank" rel="noopener noreferrer">View</a>
+          <a class="btn" id="pdfdl" data-pdf="download" href="resume.pdf" download="Nirmit_Nepal_Resume.pdf"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span class="lbl">Download Resume</span></a>
+          <a class="btn ghost" id="pdfview" data-pdf="view" href="resume.pdf" target="_blank" rel="noopener noreferrer"><span class="lbl">View</span></a>
         </div>
       </div>
       <ul class="rcontact" id="hcontact"></ul>
@@ -1112,6 +1120,127 @@ $("avfile").addEventListener("change",async e=>{
   renderHeader(); toast("Profile photo saved");
 });
  
+/* ---- PDF resume (html2pdf.js) ----
+   The PDF is compiled on the fly from the live resume data (the same objects that draw the page), laid out as a clean
+   formal A4 document in an off-screen element. Admin UI (edit outlines, + Add, eye toggles, delete icons, hidden sections,
+   "--" placeholders) therefore can never end up in the file. Download and View both use it. */
+const PDF_NAME="Nirmit_Nepal_Resume.pdf";
+const PDF_CSS=`
+.rpdf{width:100%;background:#fff;color:#16261d;font:13px/1.5 "Instrument Sans",Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased}
+.rpdf *{box-sizing:border-box;margin:0;padding:0}
+.rpdf a{color:inherit;text-decoration:none}
+.rpdf .pd-top{display:flex;justify-content:space-between;align-items:center;gap:20px;padding-bottom:14px;border-bottom:2px solid #14452f}
+.rpdf h1{font:800 30px/1.1 "Bricolage Grotesque",Georgia,serif;letter-spacing:-.01em;color:#0f2418}
+.rpdf .pd-role{margin-top:5px;font-size:14px;color:#2a5d42}
+.rpdf .pd-contact{margin-top:9px;display:flex;flex-wrap:wrap;gap:2px 16px;font-size:12px;color:#33463b}
+.rpdf .pd-links{margin-top:3px}
+.rpdf .pd-links a{color:#14452f}
+.rpdf .pd-photo{width:92px;height:92px;border-radius:50%;object-fit:cover;border:2px solid #cfe0d3;flex:none}
+.rpdf section{margin-top:17px}
+.rpdf h2{font:700 11.5px/1 "Instrument Sans",Arial,sans-serif;letter-spacing:.15em;text-transform:uppercase;color:#14452f;padding-bottom:6px;margin-bottom:10px;border-bottom:1px solid #cfe0d3}
+.rpdf .pd-item{margin-bottom:9px}
+.rpdf .pd-row{display:flex;justify-content:space-between;align-items:baseline;gap:16px}
+.rpdf .pd-t{font-weight:700;color:#0f2418}
+.rpdf .pd-when{white-space:nowrap;font-size:12px;color:#4a6153}
+.rpdf .pd-sub{color:#2b3d33}
+.rpdf .pd-muted{font-size:12px;color:#5b6f62}
+.rpdf .pd-tags{margin-top:1px;font-size:12px;color:#2a5d42}
+.rpdf .pd-learn{color:#6b7d72;font-style:italic}
+.rpdf .pd-det{margin-top:2px;color:#26372d;white-space:pre-wrap}
+.rpdf .pd-lnk{display:inline-block;margin-top:2px;font-size:12px;color:#14452f;text-decoration:underline}
+.rpdf .pd-skl{line-height:1.55}
+`;
+const real=v=>{v=(v==null?"":String(v)).trim();return v&&v!=="--"?v:""};
+function buildResumeDoc(){
+  const H=R.header||{}, doc=document.createElement("div"); doc.className="rpdf";
+  const E=(tag,cls,txt)=>{const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e};
+  const A=(href,txt,cls)=>{const a=E("a",cls,txt); a.href=href; return a};
+  const st=document.createElement("style"); st.textContent=PDF_CSS; doc.append(st);
+
+  const top=E("div","pd-top"), id=E("div","pd-id");
+  id.append(E("h1",null,real(H.name)||"Resume"));
+  if(real(H.role)) id.append(E("div","pd-role",real(H.role)));
+  const ct=E("div","pd-contact");
+  if(real(H.email)) ct.append(A("mailto:"+real(H.email),real(H.email)));
+  (H.phones||[]).map(real).filter(Boolean).forEach(n=>ct.append(A("tel:"+n.replace(/[^\d+]/g,""),n)));
+  if(real(H.location)) ct.append(E("span",null,real(H.location)));
+  if(ct.children.length) id.append(ct);
+  const lk=E("div","pd-contact pd-links");
+  RLINKS.forEach(l=>lk.append(A(l.url,l.label+": "+l.url.replace(/^https?:\/\/(www\.)?/,"").replace(/\/$/,""))));
+  id.append(lk); top.append(id);
+  if(H.avatar){const im=new Image(); im.className="pd-photo"; im.alt=""; im.src=H.avatar; top.append(im)}
+  doc.append(top);
+
+  const B={
+    education:r=>{ if(!real(r.title)) return null;
+      const d=E("div","pd-item"), row=E("div","pd-row"); row.append(E("span","pd-t",real(r.title)));
+      if(real(r.period)) row.append(E("span","pd-when",real(r.period))); d.append(row);
+      if(real(r.subtitle)) d.append(E("div","pd-sub",real(r.subtitle)));
+      if(real(r.location)) d.append(E("div","pd-muted",real(r.location))); return d },
+    skills:r=>{ const tg=csv(r.tags), lr=csv(r.learning); if(!real(r.title)||(!tg.length&&!lr.length)) return null;
+      const d=E("div","pd-item pd-skl"); d.append(E("span","pd-t",real(r.title)+": ")); d.append(E("span",null,tg.join(", ")));
+      if(lr.length) d.append(E("span","pd-learn",(tg.length?"  ·  ":"")+"Learning: "+lr.join(", "))); return d },
+    projects:r=>{ const url=real(r.link_url);
+      if(!real(r.title)||(!real(r.details)&&!url)) return null;           // unfinished "--" projects stay out of the PDF
+      const d=E("div","pd-item"); d.append(E("div","pd-t",real(r.title)));
+      const tg=[...csv(r.tags),...csv(r.learning)]; if(tg.length) d.append(E("div","pd-tags",tg.join(" · ")));
+      if(real(r.details)) d.append(E("p","pd-det",real(r.details)));
+      if(url) d.append(A(safeUrl(url),real(r.link_text)||url.replace(/^https?:\/\/(www\.)?/,""),"pd-lnk")); return d },
+    certifications:r=>{ if(!real(r.title)) return null;
+      const d=E("div","pd-item"), row=E("div","pd-row"); row.append(E("span","pd-t",real(r.title)));
+      if(real(r.period)) row.append(E("span","pd-when",real(r.period))); d.append(row);
+      if(real(r.subtitle)) d.append(E("div","pd-sub",real(r.subtitle)));
+      if(real(r.details)) d.append(E("p","pd-det",real(r.details))); return d },
+    extracurriculars:r=>{ if(!real(r.title)||!real(r.details)) return null;
+      const d=E("div","pd-item"); d.append(E("div","pd-t",real(r.title))); d.append(E("p","pd-det",real(r.details))); return d }
+  };
+  RCATS.forEach(cat=>{
+    if(hidden[cat.key]) return;                                           // sections hidden from visitors stay out of the file
+    const items=R[cat.key]||[]; let nodes;
+    if(cat.key==="languages_spoken"){
+      const L=items.filter(r=>real(r.title)).map(r=>real(r.title)+(real(r.subtitle)?" ("+real(r.subtitle)+")":""));
+      nodes=L.length?[E("div","pd-item",L.join("   ·   "))]:[];
+    }else nodes=items.map(B[cat.key]).filter(Boolean);
+    if(!nodes.length) return;
+    const sec=E("section"); sec.append(E("h2",null,cat.title)); nodes.forEach(n=>sec.append(n)); doc.append(sec);
+  });
+  return doc;
+}
+let pdfBusy=false;
+async function resumePdf(mode,btn){
+  if(pdfBusy) return; pdfBusy=true;
+  const lbl=btn.querySelector(".lbl"), old=lbl.textContent;
+  btn.setAttribute("aria-busy","true"); lbl.textContent="Preparing PDF…";
+  const win=mode==="view"?window.open("","_blank"):null;                  // opened inside the click so pop-up blockers allow it
+  try{
+    const a=document.activeElement; if(a&&a.isContentEditable) a.blur();   // commit a half-typed edit first
+    for(let i=0;i<50&&pending>0;i++) await new Promise(r=>setTimeout(r,100)); // let any in-flight Supabase save finish
+    if(document.fonts&&document.fonts.ready) await document.fonts.ready;
+    const el=buildResumeDoc(), im=el.querySelector("img"); if(im&&im.decode) await im.decode().catch(()=>{});
+    const name=real((R.header||{}).name)||"Resume";
+    const w=html2pdf().set({
+      margin:[12,13,14,13], filename:PDF_NAME,
+      image:{type:"jpeg",quality:.98},
+      html2canvas:{scale:2,useCORS:true,backgroundColor:"#ffffff",scrollX:0,scrollY:0,logging:false},
+      jsPDF:{unit:"mm",format:"a4",orientation:"portrait"},
+      pagebreak:{mode:["css","legacy"],avoid:[".pd-item","h2"]}
+    }).from(el).toPdf().get("pdf",pdf=>{pdf.setProperties({title:name+" – Resume",author:name})});
+    if(mode==="view"){
+      const url=URL.createObjectURL(await w.outputPdf("blob"));
+      if(win) win.location.href=url; else {const x=document.createElement("a");x.href=url;x.download=PDF_NAME;document.body.append(x);x.click();x.remove();toast("Pop-up blocked, so the PDF was downloaded instead")}
+      setTimeout(()=>URL.revokeObjectURL(url),180000);
+    }else{ await w.save(); toast("Resume downloaded"); }
+  }catch(err){
+    console.error(err); if(win) win.close(); toast("Couldn’t build the PDF. Please try again.");
+  }finally{
+    pdfBusy=false; btn.removeAttribute("aria-busy"); lbl.textContent=old;
+  }
+}
+document.querySelectorAll("[data-pdf]").forEach(b=>b.addEventListener("click",e=>{
+  if(!window.html2pdf||!R.header) return;     // library blocked or data not loaded yet: the link falls back to the static resume.pdf
+  e.preventDefault(); resumePdf(b.dataset.pdf,b);
+}));
+
 /* ---- the whole resume ---- */
 function renderResume(){
   if(!R.header) return;
@@ -1346,7 +1475,8 @@ setTimeout(marqueeFallback,2500);
 (function(){
   const cv=document.getElementById("lasers"); if(!cv) return;
   const ctx=cv.getContext("2d"), root=document.documentElement;
-  const reduce=matchMedia("(prefers-reduced-motion:reduce)").matches;
+  const mq=matchMedia("(prefers-reduced-motion:reduce)");
+  let reduce=mq.matches, quality=1.5, slow=0, ema=16.7, rt=0, sPend=0, bw=0, bh=0;
   let W=0,H=0,dpr=1,raf=0,last=0,time=0,visible=true,mx=0,my=0,tx=0,ty=0,sc=0,scT=0;
   let col={a:[42,138,86],b:[111,191,90],dark:false};
   const nodes=[],edges=[],parts=[];
@@ -1438,24 +1568,41 @@ setTimeout(marqueeFallback,2500);
   }
  
   function readScroll(){const h=document.documentElement.scrollHeight-innerHeight; scT=h>0?Math.min(1,Math.max(0,scrollY/h)):0}
-  function size(){
-    W=innerWidth; H=innerHeight; dpr=Math.min(devicePixelRatio||1,2);
-    cv.width=W*dpr; cv.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
-    readScroll(); sc=scT; build(); draw();
+  function size(rebuild){
+    W=innerWidth; H=innerHeight; dpr=Math.min(devicePixelRatio||1,quality);
+    cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr); ctx.setTransform(dpr,0,0,dpr,0,0);
+    readScroll(); sc=scT;
+    if(rebuild!==false){bw=W;bh=H;build()}
+    draw();
+  }
+  /* resize is debounced; the lattice is only rebuilt when the width changes or the height changes a lot
+     (mobile address bars grow/shrink the viewport while scrolling, and that must not reshuffle the scene) */
+  function onResize(){
+    clearTimeout(rt);
+    rt=setTimeout(()=>size(innerWidth!==bw||Math.abs(innerHeight-bh)>140),150);
   }
   function step(ts){
-    raf=0; if(!visible) return;
-    const dt=Math.min(50,ts-(last||ts)); last=ts; time+=dt;
+    raf=0; if(!visible||reduce) return;
+    raf=requestAnimationFrame(step);                       // one rAF loop, never a timer
+    const dt=ts-(last||ts-16); if(dt<14) return;           // cap near 60 fps on 90/120 Hz screens
+    last=ts; const d=Math.min(50,dt); time+=d;
     mx+=(tx-mx)*.04; my+=(ty-my)*.04; sc+=(scT-sc)*.06;
-    parts.forEach(q=>{ q.t+=Math.abs(q.v)*dt/1000; if(q.t>=1) q.t-=1; });
-    draw(); raf=requestAnimationFrame(step);
+    parts.forEach(q=>{ q.t+=Math.abs(q.v)*d/1000; if(q.t>=1) q.t-=1; });
+    draw();
+    ema+=(dt-ema)*.05;                                     // struggling device: fall back to 1x pixel density once
+    if(ema>30&&quality>1&&++slow>90){quality=1;slow=0;size(false)}
   }
   function start(){ if(!reduce&&!raf&&visible){last=0;raf=requestAnimationFrame(step)} }
- 
+  function applyMotion(){                                  // follows the OS setting live, not only at page load
+    reduce=mq.matches;
+    if(reduce){ if(raf){cancelAnimationFrame(raf);raf=0} mx=my=tx=ty=0; sc=scT; draw() } else start();
+  }
+
   readTheme(); size(); start();
-  addEventListener("resize",size);
-  addEventListener("scroll",()=>{readScroll(); if(reduce){sc=scT;draw()}},{passive:true});
-  if(!reduce) addEventListener("pointermove",e=>{tx=e.clientX/W*2-1; ty=e.clientY/H*2-1},{passive:true});
+  addEventListener("resize",onResize);
+  addEventListener("scroll",()=>{readScroll(); if(reduce&&!sPend) sPend=requestAnimationFrame(()=>{sPend=0;sc=scT;draw()})},{passive:true});
+  addEventListener("pointermove",e=>{ if(reduce) return; tx=e.clientX/W*2-1; ty=e.clientY/H*2-1 },{passive:true});
+  if(mq.addEventListener) mq.addEventListener("change",applyMotion); else if(mq.addListener) mq.addListener(applyMotion);
   new MutationObserver(()=>{readTheme();draw()}).observe(root,{attributes:true,attributeFilter:["data-theme"]});
   document.addEventListener("visibilitychange",()=>{visible=!document.hidden; if(visible)start()});
 })();

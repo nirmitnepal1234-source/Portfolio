@@ -325,12 +325,14 @@ footer{padding:26px 0;text-align:center;color:var(--muted);font-size:.9rem;borde
 @media (max-width:340px){.tiers{grid-template-columns:1fr}}
 @media (hover:none){.card:hover,.tier:hover{transform:none}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition-duration:.01ms!important}h1 .ch{transform:none;opacity:1}}
+
+/* full-page 3D laser scene (replaces the old smoky gradient) */
+#lasers{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
 </style>
 </head>
 <body>
 <div id="progress"></div>
-<div class="blobs" aria-hidden="true"><i></i><i></i><i></i></div>
-<canvas id="gl" aria-hidden="true"></canvas>
+<canvas id="lasers" aria-hidden="true"></canvas>
 <div class="toast" id="toast" role="status"></div>
  
 <header class="nav">
@@ -538,8 +540,8 @@ async function loadSkills(){
   if(!sb){skills=SAMPLE;view();return}
   grid.innerHTML='<li class="card skel"></li><li class="card skel"></li>';
   const {data,error}=await sb.from("skills").select("*").order("sort_order").order("created_at");
-  if(error){grid.innerHTML="";$("count").textContent="Couldn’t load skills. Check your Supabase setup and refresh.";console.error(error);return}
-  skills=data; view();
+  if(error){grid.innerHTML="";$("count").textContent="Couldn’t load skills. Check your Supabase setup and refresh.";console.error(error);marqueeFallback();return}
+  skills=data; view(); if(!skills.length) marqueeFallback();
 }
 async function loadContent(){
   if(!sb) return;
@@ -1258,6 +1260,132 @@ void main(){
 })();
 
 loadSkills(); loadContent(); loadLinks();
+</script>
+<script>
+function marqueeFallback(){
+  const t=document.getElementById("track"); if(!t||t.children.length) return;
+  const names=(typeof SAMPLE!=="undefined"?SAMPLE.map(x=>x.name):["HTML","CSS","JavaScript","Java","Python","SQL","Git"]);
+  for(let k=0;k<4;k++) names.forEach(n=>{const sp=document.createElement("span");sp.textContent=n;t.append(sp)});
+}
+setTimeout(marqueeFallback,2500);
+
+/* 3D laser lattice: layered grid receding to a vanishing point, thin beams, particles gliding along them */
+(function(){
+  const cv=document.getElementById("lasers"); if(!cv) return;
+  const ctx=cv.getContext("2d"), root=document.documentElement;
+  const reduce=matchMedia("(prefers-reduced-motion:reduce)").matches;
+  let W=0,H=0,dpr=1,raf=0,last=0,time=0,visible=true,mx=0,my=0,tx=0,ty=0,sc=0,scT=0;
+  let col={a:[42,138,86],b:[111,191,90],dark:false};
+  const nodes=[],edges=[],parts=[];
+  const FOV=760, CAM=1150, L=5, ZN=-450, ZF=800;
+
+  function rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+  function hex(v,fb){const m=/^#?([0-9a-f]{6})$/i.exec((v||"").trim());if(!m)return fb;const n=parseInt(m[1],16);return[n>>16&255,n>>8&255,n&255]}
+  function readTheme(){
+    const cs=getComputedStyle(root);
+    col.dark=root.getAttribute("data-theme")==="dark";
+    col.a=hex(cs.getPropertyValue("--g2"),col.a);
+    col.b=hex(cs.getPropertyValue("--g3"),col.b);
+    if(!col.dark) col.b=col.a;
+  }
+  const rgba=(c,a)=>"rgba("+c[0]+","+c[1]+","+c[2]+","+Math.max(0,a).toFixed(3)+")";
+  const fog=d=>Math.min(1,Math.max(0,(d-650)/1500)); // 0 near .. 1 far
+
+  function build(){
+    const r=rng(11), cell=W<700?125:W<1100?165:195, ext=1.5;
+    const cols=Math.ceil(W*ext/cell)+1, rows=Math.ceil(H*ext/cell)+1;
+    nodes.length=edges.length=parts.length=0;
+    const jx=[],jy=[];
+    for(let i=0;i<cols;i++){jx[i]=[];jy[i]=[];for(let j=0;j<rows;j++){jx[i][j]=(r()-.5)*.34*cell;jy[i][j]=(r()-.5)*.34*cell}}
+    const idx=[];
+    for(let l=0;l<L;l++){
+      const z=ZN+l*(ZF-ZN)/(L-1), k=FOV/(CAM+z); idx[l]=[];
+      for(let i=0;i<cols;i++){idx[l][i]=[];for(let j=0;j<rows;j++){
+        const u=(i-(cols-1)/2)*cell+jx[i][j]+(r()-.5)*.08*cell, v=(j-(rows-1)/2)*cell+jy[i][j]+(r()-.5)*.08*cell;
+        const n={x:u/k,y:v/k,z,ph:r()*6.28,p:null}; idx[l][i][j]=n; nodes.push(n);
+      }}
+    }
+    const add=(a,b,pr)=>{ if(!b||r()>pr) return; const len=Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z), e={a,b,len}; edges.push(e);
+      if(r()<.3) parts.push({e,t:r(),v:(70+r()*80)/len*(r()<.5?1:-1)}); };
+    for(let l=0;l<L;l++)for(let i=0;i<cols;i++)for(let j=0;j<rows;j++){
+      const n=idx[l][i][j];
+      add(n,idx[l][i+1]&&idx[l][i+1][j],.55);
+      add(n,idx[l][i][j+1],.55);
+      add(n,idx[l][i+1]&&idx[l][i+1][j+1],.09);
+      add(n,idx[l+1]&&idx[l+1][i][j],.22);
+    }
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const yaw=Math.sin(time*.00007)*.08+mx*.07+(sc-.5)*.1, pitch=Math.sin(time*.00005)*.04+my*.045+(sc-.5)*.12;
+    const cy=Math.cos(yaw),sy=Math.sin(yaw),cx=Math.cos(pitch),sx=Math.sin(pitch);
+    nodes.forEach(n=>{
+      let x=n.x*cy+n.z*sy, z=-n.x*sy+n.z*cy, y=n.y*cx-z*sx; z=n.y*sx+z*cx;
+      const d=CAM+z, k=FOV/d; n.p={x:W/2+x*k,y:H/2+y*k,k,d};
+    });
+    const dk=col.dark, glow=dk?"lighter":"source-over", gA=dk?.05:.035, cA=dk?.34:.24, m=60;
+    ctx.lineCap="round";
+    edges.forEach(e=>{
+      const a=e.a.p,b=e.b.p;
+      if((a.x<-m&&b.x<-m)||(a.x>W+m&&b.x>W+m)||(a.y<-m&&b.y<-m)||(a.y>H+m&&b.y>H+m)) return;
+      const fa=1-fog(a.d)*.9, fb=1-fog(b.d)*.9, w=(a.k+b.k)/2;
+      ctx.globalCompositeOperation=glow;
+      ctx.strokeStyle=rgba(col.a,gA*(fa+fb)/2); ctx.lineWidth=3.2*w;
+      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+      ctx.globalCompositeOperation="source-over";
+      ctx.strokeStyle=rgba(col.a,cA*(fa+fb)/2); ctx.lineWidth=Math.max(.3,.55*w); ctx.stroke();
+    });
+    // nodes
+    nodes.forEach(n=>{
+      const p=n.p; if(p.x<-m||p.x>W+m||p.y<-m||p.y>H+m) return;
+      const f=1-fog(p.d)*.9, pl=.5+.5*Math.sin(time*.0008+n.ph), r=(1.2+.6*pl)*p.k;
+      if(f>.45){
+        ctx.globalCompositeOperation=glow;
+        const h=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*5);
+        h.addColorStop(0,rgba(col.b,(dk?.14:.08)*f)); h.addColorStop(1,rgba(col.b,0));
+        ctx.fillStyle=h; ctx.beginPath(); ctx.arc(p.x,p.y,r*5,0,6.283); ctx.fill();
+        ctx.globalCompositeOperation="source-over";
+      }
+      ctx.fillStyle=rgba(col.a,.5*f); ctx.beginPath(); ctx.arc(p.x,p.y,Math.max(.7,r),0,6.283); ctx.fill();
+    });
+    // particles
+    parts.forEach(q=>{
+      const a=q.e.a.p,b=q.e.b.p, f=q.v>0?q.t:1-q.t, x=a.x+(b.x-a.x)*f, y=a.y+(b.y-a.y)*f;
+      if(x<-m||x>W+m||y<-m||y>H+m) return;
+      const k=a.k+(b.k-a.k)*f, d=a.d+(b.d-a.d)*f, al=Math.sin(Math.PI*q.t)*(1-fog(d)*.85), r=Math.max(.6,1.05*k);
+      ctx.globalCompositeOperation=glow;
+      const h=ctx.createRadialGradient(x,y,0,x,y,r*5);
+      h.addColorStop(0,rgba(col.b,(dk?.3:.2)*al)); h.addColorStop(1,rgba(col.b,0));
+      ctx.fillStyle=h; ctx.beginPath(); ctx.arc(x,y,r*5,0,6.283); ctx.fill();
+      ctx.globalCompositeOperation="source-over";
+      ctx.fillStyle=rgba(col.a,.65*al); ctx.beginPath(); ctx.arc(x,y,r,0,6.283); ctx.fill();
+    });
+    ctx.globalCompositeOperation="source-over";
+  }
+
+  function readScroll(){const h=document.documentElement.scrollHeight-innerHeight; scT=h>0?Math.min(1,Math.max(0,scrollY/h)):0}
+  function size(){
+    W=innerWidth; H=innerHeight; dpr=Math.min(devicePixelRatio||1,2);
+    cv.width=W*dpr; cv.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+    readScroll(); sc=scT; build(); draw();
+  }
+  function step(ts){
+    raf=0; if(!visible) return;
+    const dt=Math.min(50,ts-(last||ts)); last=ts; time+=dt;
+    mx+=(tx-mx)*.04; my+=(ty-my)*.04; sc+=(scT-sc)*.06;
+    parts.forEach(q=>{ q.t+=Math.abs(q.v)*dt/1000; if(q.t>=1) q.t-=1; });
+    draw(); raf=requestAnimationFrame(step);
+  }
+  function start(){ if(!reduce&&!raf&&visible){last=0;raf=requestAnimationFrame(step)} }
+
+  readTheme(); size(); start();
+  addEventListener("resize",size);
+  addEventListener("scroll",()=>{readScroll(); if(reduce){sc=scT;draw()}},{passive:true});
+  if(!reduce) addEventListener("pointermove",e=>{tx=e.clientX/W*2-1; ty=e.clientY/H*2-1},{passive:true});
+  new MutationObserver(()=>{readTheme();draw()}).observe(root,{attributes:true,attributeFilter:["data-theme"]});
+  document.addEventListener("visibilitychange",()=>{visible=!document.hidden; if(visible)start()});
+})();
 </script>
 </body>
 </html>
